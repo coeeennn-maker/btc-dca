@@ -95,10 +95,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .fg-track{height:8px;border-radius:4px;margin:14px 0 2px;background:linear-gradient(to right,#3fb950,#e3b341,#f85149);position:relative}
 .fg-dot{width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--bg);position:absolute;top:-2px;transition:left .3s}
 .fg-track-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
-.bt-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
-.bt-stat{text-align:center}
-.bt-val{font-size:20px;font-weight:700;color:var(--blue)}
-.bt-lbl{font-size:10px;color:var(--muted);margin-top:2px}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{text-align:left;padding:8px 10px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)}
 td{padding:8px 10px;border-bottom:1px solid rgba(48,54,61,.4)}
@@ -275,15 +271,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 
   <div class="card">
-    <div class="card-title">Rolling Backtest <span style="font-weight:400;text-transform:none;font-size:10px;color:var(--muted)">— All 20-week windows in BTC history</span></div>
-    <div id="bt-loading" class="loading"><span class="spin"></span>Running across all historical windows…</div>
-    <div id="bt-results" style="display:none">
-      <div class="chart-wrap" style="height:200px"><canvas id="bt-chart"></canvas></div>
-      <div class="bt-stats" id="bt-stats"></div>
-    </div>
-  </div>
-
-  <div class="card">
     <div class="card-title">Budget Zone Allocation</div>
     <div id="zone-bars"></div>
   </div>
@@ -366,7 +353,7 @@ function importData() {
 // ── App state ────────────────────────────────────────────────────────────────
 let allPrices=null,riskSeries=null,livePrice=null,liveRisk=null,fgSeries=null,spotPrice=null,liveRegime=null;
 let mvrvProxy=null,vol30d=null,halvingInfo=null;
-let pendingBuy=null,pendingSell=null,btDone=false;
+let pendingBuy=null,pendingSell=null;
 let conservativeMode = TRACKER.conservative_mode !== false;
 
 document.getElementById('con-toggle').checked = conservativeMode;
@@ -597,7 +584,6 @@ function processAll() {
   updateReserve();
   const now=new Date();
   document.getElementById('last-updated').textContent=`Updated ${now.toLocaleDateString('en-AU')} ${now.toLocaleTimeString('en-AU')}  ·  Risk: ${(liveRisk*100).toFixed(1)}%`;
-  if(!btDone){runBacktest();btDone=true;}
 }
 
 function updateBanner(risk,fg,price) {
@@ -827,58 +813,6 @@ function renderPerfChart(price) {
     ]},options:opts});
 }
 
-async function runBacktest() {
-  await new Promise(r=>setTimeout(r,200));
-  const data=allPrices,rs=riskSeries,WINDOW=140,BUDGET=10000,results=[];
-  const rMap={};
-  rs.forEach(d=>{if(d.risk!==null)rMap[d.x]=d.risk;});
-  for(let i=365;i<data.length-WINDOW;i+=7){
-    const w=data.slice(i,i+WINDOW+1);
-    if(w.length<WINDOW)break;
-    let rem=BUDGET,sBTC=0,uC=0;
-    const uW=BUDGET/20,slot=BUDGET/15;
-    for(let wk=0;wk<20;wk++){
-      const di=i+wk*7;if(di>=data.length)break;
-      const dp=data[di],risk=rMap[dp.x]??0.5;
-      uC+=uW/dp.y;
-      if(risk<0.30&&rem>0){
-        const sl=risk<0.10?4:risk<0.20?3:risk<0.30?2:1;
-        let amt=Math.min(Math.round(sl*slot/50)*50,rem,rem*0.33);
-        if(amt>=50){sBTC+=amt/dp.y;rem-=amt;}
-      }
-    }
-    const ep=w[w.length-1].y;
-    const sF=sBTC*ep+rem,uF=uC*ep;
-    results.push({yr:new Date(data[i].x*1000).getFullYear(),sR:(sF/BUDGET-1)*100,uR:(uF/BUDGET-1)*100,out:((sF/BUDGET-1)*100)-((uF/BUDGET-1)*100)});
-  }
-  if(!results.length){document.getElementById('bt-loading').textContent='Not enough data.';return;}
-  const wr=results.filter(r=>r.out>0).length/results.length*100;
-  const mO=median(results.map(r=>r.out));
-  const p10=pct(results.map(r=>r.sR),10),p90=pct(results.map(r=>r.sR),90);
-  document.getElementById('bt-loading').style.display='none';
-  document.getElementById('bt-results').style.display='block';
-  document.getElementById('bt-stats').innerHTML=`
-    <div class="bt-stat"><div class="bt-val">${results.length.toLocaleString()}</div><div class="bt-lbl">Windows Tested</div></div>
-    <div class="bt-stat"><div class="bt-val" style="color:var(--green)">${wr.toFixed(0)}%</div><div class="bt-lbl">Beat Uniform DCA</div></div>
-    <div class="bt-stat"><div class="bt-val" style="color:${mO>=0?'var(--green)':'var(--red)'}">${mO>=0?'+':''}${mO.toFixed(1)}%</div><div class="bt-lbl">Median Outperformance</div></div>
-    <div class="bt-stat"><div class="bt-val">${p10.toFixed(0)}% / ${p90.toFixed(0)}%</div><div class="bt-lbl">10th / 90th Percentile</div></div>
-  `;
-  const step=Math.max(1,Math.floor(results.length/120));
-  const sc=results.filter((_,i)=>i%step===0);
-  new Chart(document.getElementById('bt-chart'),{type:'line',
-    data:{labels:sc.map(r=>r.yr),datasets:[
-      {label:'Risk Strategy Return',data:sc.map(r=>r.sR),borderColor:'#3fb950',borderWidth:1.5,pointRadius:0,fill:false},
-      {label:'Uniform DCA Return',data:sc.map(r=>r.uR),borderColor:'#58a6ff',borderWidth:1.5,pointRadius:0,borderDash:[4,3],fill:false}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},
-      scales:{x:{ticks:{color:'#8b949e',font:{size:9},maxTicksLimit:10},grid:{color:'rgba(48,54,61,.3)'}},
-              y:{ticks:{color:'#8b949e',callback:v=>v.toFixed(0)+'%'},grid:{color:'rgba(48,54,61,.3)'}}}}
-  });
-}
-
-function median(arr){const s=[...arr].sort((a,b)=>a-b),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
-function pct(arr,p){const s=[...arr].sort((a,b)=>a-b);return s[Math.floor(p/100*(s.length-1))];}
 
 function renderHistory(price) {
   const hist=TRACKER.history||[];
