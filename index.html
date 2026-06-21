@@ -176,6 +176,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <button class="btn btn-muted" onclick="openAddFunds()" style="font-size:11px;padding:6px 12px">+ Add Funds</button>
       <button class="btn btn-muted" onclick="exportData()" style="font-size:11px;padding:6px 12px">↑ Export</button>
       <button class="btn btn-muted" onclick="importData()" style="font-size:11px;padding:6px 12px">↓ Import</button>
+      <button class="btn btn-muted" onclick="openSyncModal()" style="font-size:11px;padding:6px 12px" id="sync-btn">☁ Sync</button>
       <button class="btn btn-muted" onclick="reloadData()" style="font-size:11px;padding:6px 12px">↻ Refresh</button>
     </div>
   </div>
@@ -350,15 +351,107 @@ function importData() {
   input.click();
 }
 
+// ── GitHub Gist sync ─────────────────────────────────────────────────────────
+function getSyncConfig() {
+  try { return JSON.parse(localStorage.getItem('btc-dca-sync') || 'null'); } catch(_) { return null; }
+}
+
+function setSyncStatus(msg, color='var(--muted)') {
+  const btn = document.getElementById('sync-btn');
+  if (btn) { btn.textContent = '☁ ' + msg; btn.style.color = color; }
+}
+
+async function loadFromGist() {
+  const cfg = getSyncConfig();
+  if (!cfg?.pat) return false;
+  try {
+    setSyncStatus('Syncing…');
+    let gistId = cfg.gistId;
+    if (!gistId) return false;
+    const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { Authorization: `token ${cfg.pat}`, Accept: 'application/vnd.github.v3+json' }
+    });
+    if (!r.ok) { setSyncStatus('Sync error', 'var(--red)'); return false; }
+    const data = await r.json();
+    const content = data.files['btc-dca-tracker.json']?.content;
+    if (!content) return false;
+    localStorage.setItem('btc-dca-tracker', content);
+    setSyncStatus('Synced ✓', 'var(--green)');
+    return true;
+  } catch(_) { setSyncStatus('Offline', 'var(--muted)'); return false; }
+}
+
+async function saveToGist(trackerData) {
+  const cfg = getSyncConfig();
+  if (!cfg?.pat) return;
+  const body = JSON.stringify(trackerData, null, 2);
+  try {
+    if (!cfg.gistId) {
+      // Create gist on first save
+      const r = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: { Authorization: `token ${cfg.pat}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: 'BTC DCA Advisor tracker', public: false, files: { 'btc-dca-tracker.json': { content: body } } })
+      });
+      if (r.ok) {
+        const d = await r.json();
+        localStorage.setItem('btc-dca-sync', JSON.stringify({ ...cfg, gistId: d.id }));
+        document.getElementById('sync-gist-id').value = d.id;
+      }
+    } else {
+      await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `token ${cfg.pat}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: { 'btc-dca-tracker.json': { content: body } } })
+      });
+    }
+    setSyncStatus('Synced ✓', 'var(--green)');
+  } catch(_) { setSyncStatus('Sync failed', 'var(--red)'); }
+}
+
+function openSyncModal() {
+  const cfg = getSyncConfig() || {};
+  document.getElementById('sync-pat').value = cfg.pat || '';
+  document.getElementById('sync-gist-id').value = cfg.gistId || '';
+  document.getElementById('sync-modal').style.display = 'flex';
+}
+function closeSyncModal() { document.getElementById('sync-modal').style.display = 'none'; }
+
+async function saveSyncSettings() {
+  const pat = document.getElementById('sync-pat').value.trim();
+  const gistId = document.getElementById('sync-gist-id').value.trim();
+  if (!pat) { alert('Enter your GitHub token.'); return; }
+  localStorage.setItem('btc-dca-sync', JSON.stringify({ pat, gistId: gistId || null }));
+  closeSyncModal();
+  // If no gist yet, create one now with current tracker data
+  if (!gistId) {
+    await saveToGist(TRACKER);
+    const newCfg = getSyncConfig();
+    if (newCfg?.gistId) {
+      alert(`Gist created! ID: ${newCfg.gistId}\n\nCopy this into the Gist ID field on your other device to link them.`);
+    }
+  } else {
+    // Pull latest from gist
+    const synced = await loadFromGist();
+    if (synced) { TRACKER = loadTracker(); location.reload(); }
+  }
+}
+
 // ── App state ────────────────────────────────────────────────────────────────
 let allPrices=null,riskSeries=null,livePrice=null,liveRisk=null,fgSeries=null,spotPrice=null,liveRegime=null;
 let mvrvProxy=null,vol30d=null,halvingInfo=null;
 let pendingBuy=null,pendingSell=null;
-let conservativeMode = TRACKER.conservative_mode !== false;
+let conservativeMode = true;
 
-document.getElementById('con-toggle').checked = conservativeMode;
-document.getElementById('cycle-lbl').textContent = `Cycle ${TRACKER.cycle||1} · $${TRACKER.total_budget.toLocaleString()} budget`;
-reloadData();
+async function init() {
+  const synced = await loadFromGist();
+  if (synced) TRACKER = loadTracker();
+  conservativeMode = TRACKER.conservative_mode !== false;
+  document.getElementById('con-toggle').checked = conservativeMode;
+  document.getElementById('cycle-lbl').textContent = `Cycle ${TRACKER.cycle||1} · $${TRACKER.total_budget.toLocaleString()} budget`;
+  reloadData();
+}
+init();
 
 async function reloadData(){
   document.getElementById('last-updated').textContent = 'Refreshing…';
@@ -850,6 +943,7 @@ async function writeTracker(newT, isSell=false) {
   const okId=isSell?'sell-ok':'buy-ok';
   const btnId=isSell?'sell-btn':'buy-btn';
   saveTracker(newT);
+  await saveToGist(newT);
   document.getElementById(okId).style.display='inline';
   document.getElementById(btnId).disabled=true;
   setTimeout(()=>location.reload(),1200);
@@ -909,30 +1003,18 @@ function onConToggle(cb) {
 }
 </script>
 
-<!-- Add Funds Modal -->
-<div id="add-funds-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;align-items:center;justify-content:center">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 32px;width:min(340px,90vw);box-shadow:0 8px 32px rgba(0,0,0,.4)">
-    <div style="font-size:15px;font-weight:700;margin-bottom:6px">Add Funds</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:18px">Current budget: <strong style="color:var(--text)" id="af-current">—</strong> · Remaining: <strong style="color:var(--text)" id="af-remaining">—</strong></div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Amount to add (AUD $)</div>
-    <input id="add-funds-input" type="number" min="50" step="50" placeholder="e.g. 5000"
-      style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:15px;margin-bottom:8px"
-      onkeydown="if(event.key==='Enter')confirmAddFunds()">
-    <div id="af-preview" style="font-size:11px;color:var(--muted);min-height:16px;margin-bottom:16px"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-muted" onclick="closeAddFunds()">Cancel</button>
-      <button class="btn btn-green" onclick="confirmAddFunds()">Confirm &amp; Save</button>
+<!-- Sync Modal -->
+<div id="sync-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 32px;width:min(420px,92vw);box-shadow:0 8px 32px rgba(0,0,0,.4)">
+    <div style="font-size:15px;font-weight:700;margin-bottom:6px">☁ GitHub Gist Sync</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.6">Syncs your trades across phone and computer via a private GitHub Gist. Your token is stored only in this browser.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">GitHub Personal Access Token <span style="color:var(--green)">(gist scope only)</span></div>
+    <input id="sync-pat" type="password" placeholder="ghp_xxxxxxxxxxxx"
+      style="width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;margin-bottom:12px;font-family:monospace">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Gist ID <span style="color:var(--muted);font-weight:400">(leave blank on first device — will be created automatically)</span></div>
+    <input id="sync-gist-id" type="text" placeholder="e.g. 4a3b2c1d0e9f8a7b6c5d"
+      style="width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;margin-bottom:6px;font-family:monospace">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:18px;line-height:1.6">
+      To get a token: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → New token → tick <strong>gist</strong> only → Generate.
     </div>
-  </div>
-</div>
-<script>
-document.getElementById('add-funds-input').addEventListener('input',function(){
-  const v=parseFloat(this.value);
-  const prev=document.getElementById('af-preview');
-  if(v>0){prev.textContent=`New budget: $${(TRACKER.total_budget+v).toLocaleString()} · New remaining: $${(TRACKER.remaining+v).toLocaleString()}`;}
-  else{prev.textContent='';}
-});
-document.getElementById('add-funds-modal').addEventListener('click',function(e){if(e.target===this)closeAddFunds();});
-</script>
-</body>
-</html>
+    <div style="display:flex;gap:8px;justify-conten
