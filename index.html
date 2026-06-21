@@ -1,363 +1,1004 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#13171c" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="BTC DCA" />
-  <link rel="apple-touch-icon" href="icon.svg" />
+<!-- PWA -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0d1117" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="BTC DCA" />
+<link rel="apple-touch-icon" href="icon.svg" />
 
-  <title>BTC DCA Risk Meter</title>
-  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: #13171c;
-      color: #e0e0e0;
-      font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
-      padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 24px);
-      min-height: 100dvh;
-    }
-
-    h1 {
-      text-align: center;
-      font-size: clamp(16px, 4vw, 22px);
-      font-weight: 600;
-      color: #f5c842;
-      margin: 16px 0 4px;
-    }
-
-    .subtitle {
-      text-align: center;
-      font-size: clamp(10px, 2.5vw, 13px);
-      color: #666;
-      margin-bottom: 14px;
-      line-height: 1.4;
-    }
-
-    #status-bar {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 12px 20px;
-      background: #1e2530;
-      border: 1px solid #2c3340;
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin-bottom: 14px;
-      font-size: clamp(12px, 3vw, 15px);
-    }
-
-    .stat-label { color: #888; font-size: clamp(10px, 2.5vw, 12px); margin-bottom: 2px; }
-    .stat-value { font-size: clamp(15px, 4vw, 18px); font-weight: 700; }
-
-    #loading {
-      text-align: center;
-      padding: 40px 20px;
-      font-size: 15px;
-      color: #888;
-    }
-
-    #chart {
-      width: 100%;
-      height: clamp(260px, 55vw, 520px);
-    }
-
-    .risk-bar-wrap {
-      margin: 12px 0;
-    }
-
-    .risk-bar-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: clamp(9px, 2.2vw, 11px);
-      color: #666;
-      margin-bottom: 3px;
-    }
-
-    .risk-bar-track {
-      width: 100%;
-      height: 10px;
-      border-radius: 5px;
-      background: linear-gradient(to right,
-        #00c853 0%, #69f0ae 25%, #00bfa5 45%,
-        #ffab00 55%, #ff6d00 70%, #d50000 100%
-      );
-      position: relative;
-    }
-
-    .risk-bar-needle {
-      position: absolute;
-      top: -5px;
-      width: 4px;
-      height: 20px;
-      background: white;
-      border-radius: 2px;
-      transform: translateX(-50%);
-      transition: left 0.5s ease;
-      box-shadow: 0 0 4px rgba(0,0,0,0.6);
-    }
-
-    .table-wrap {
-      margin: 20px auto 0;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      border-radius: 8px;
-    }
-
-    .table-wrap h2 {
-      text-align: center;
-      font-size: clamp(13px, 3vw, 15px);
-      color: #aaa;
-      margin-bottom: 10px;
-      font-weight: 500;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: clamp(11px, 2.8vw, 13px);
-      min-width: 300px;
-    }
-
-    th {
-      background: #1e2530;
-      color: #aaa;
-      padding: 8px 10px;
-      text-align: center;
-      border: 1px solid #2c3340;
-      white-space: nowrap;
-    }
-
-    td {
-      padding: 6px 10px;
-      border: 1px solid #252b35;
-      text-align: center;
-    }
-
-    tr:nth-child(even) td { background: #181d24; }
-
-    .signal-strong-buy  { color: #00e676; font-weight: 700; }
-    .signal-buy         { color: #69f0ae; font-weight: 600; }
-    .signal-neutral     { color: #ffd740; }
-    .signal-sell        { color: #ff6e40; font-weight: 600; }
-    .signal-strong-sell { color: #ff1744; font-weight: 700; }
-
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      padding-bottom: 8px;
-      font-size: clamp(9px, 2.2vw, 11px);
-      color: #444;
-      line-height: 1.6;
-    }
-
-    @media (max-width: 480px) {
-      #status-bar { gap: 10px 16px; }
-      .table-wrap { border-radius: 6px; }
-    }
-  </style>
+<title>BTC DCA Advisor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;
+  --green:#3fb950;--red:#f85149;--yellow:#e3b341;--blue:#58a6ff;--purple:#bc8cff;--orange:#f78166;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100dvh}
+#sidebar{width:290px;min-width:290px;background:var(--surface);border-right:1px solid var(--border);padding:20px 18px;position:sticky;top:0;height:100vh;overflow-y:auto;font-size:12px}
+#sidebar h2{font-size:13px;color:var(--orange);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+#sidebar h3{font-size:11px;color:var(--yellow);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 5px}
+#sidebar p,#sidebar li{color:var(--muted);line-height:1.6;margin-bottom:3px}
+#sidebar ul{padding-left:14px}
+.zone-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px}
+.zone-row .zl{color:var(--text);font-weight:600}
+.toggle-row{display:flex;align-items:center;gap:8px;margin:10px 0}
+.toggle{position:relative;width:36px;height:20px}
+.toggle input{display:none}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:10px;cursor:pointer;transition:.2s}
+.toggle input:checked+.toggle-slider{background:var(--green)}
+.toggle-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s}
+.toggle input:checked+.toggle-slider:before{transform:translateX(16px)}
+#main{flex:1;padding:22px 24px;max-width:1080px;overflow-y:auto}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px}
+.hdr h1{font-size:20px;font-weight:700}
+.hdr-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.banner{border-radius:10px;padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.banner.hold{background:rgba(139,148,158,.08);border:1px solid var(--border)}
+.banner.buy{background:rgba(63,185,80,.12);border:1px solid var(--green)}
+.banner.sbuy{background:rgba(63,185,80,.22);border:2px solid var(--green)}
+.banner.sell{background:rgba(248,81,73,.12);border:1px solid var(--red)}
+.banner.done{background:rgba(88,166,255,.08);border:1px solid var(--blue)}
+.sig{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.banner.buy .sig,.banner.sbuy .sig{color:var(--green)}
+.banner.hold .sig{color:var(--muted)}
+.banner.sell .sig{color:var(--red)}
+.banner.done .sig{color:var(--blue)}
+.sig-detail{font-size:12px;color:var(--muted);margin-top:4px}
+.banner-right{text-align:right}
+.b-price{font-size:26px;font-weight:700}
+.b-price-lbl{font-size:11px;color:var(--muted)}
+.risk-pill{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-top:6px}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.mc-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.mc-val{font-size:18px;font-weight:700}
+.mc-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+.deploy-amt{font-size:44px;font-weight:800;color:var(--green);line-height:1}
+.deploy-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.factors-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.factor{background:var(--bg);border-radius:6px;padding:9px 12px}
+.factor-name{font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase}
+.factor-val{font-size:14px;font-weight:600}
+.zone-ind{background:var(--bg);border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px;color:var(--muted)}
+.zone-ind strong{color:var(--text)}
+.sell-amt{font-size:34px;font-weight:800;color:var(--red);line-height:1}
+.sell-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.cgt-note{border-radius:6px;padding:10px 12px;margin-top:12px;font-size:12px}
+.cgt-ok{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);color:var(--green)}
+.cgt-warn{background:rgba(227,179,65,.1);border:1px solid rgba(227,179,65,.3);color:var(--yellow)}
+.confirm-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap}
+.confirm-row label{font-size:12px;cursor:pointer;user-select:none}
+.btn{border:none;border-radius:6px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn-green{background:var(--green);color:#000}
+.btn-red{background:var(--red);color:#fff}
+.btn-muted{background:var(--border);color:var(--text)}
+.save-ok{font-size:11px;color:var(--green);display:none}
+.manual-fields{display:none;margin-top:10px;font-size:12px;color:var(--muted);line-height:2}
+.manual-fields input{margin:0 6px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);width:100px}
+.chart-wrap{position:relative;height:260px}
+.chart-row{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:14px}
+.fg-big{font-size:48px;font-weight:800;line-height:1}
+.fg-lbl{font-size:13px;color:var(--muted);margin-top:3px}
+.fg-track{height:8px;border-radius:4px;margin:14px 0 2px;background:linear-gradient(to right,#3fb950,#e3b341,#f85149);position:relative}
+.fg-dot{width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--bg);position:absolute;top:-2px;transition:left .3s}
+.fg-track-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+.bt-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.bt-stat{text-align:center}
+.bt-val{font-size:20px;font-weight:700;color:var(--blue)}
+.bt-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 10px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)}
+td{padding:8px 10px;border-bottom:1px solid rgba(48,54,61,.4)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.reserve-banner{background:rgba(188,140,255,.08);border:1px solid rgba(188,140,255,.3);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--purple);display:none}
+.loading{color:var(--muted);font-size:12px;padding:30px;text-align:center}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:860px){
+  body{flex-direction:column}
+  #sidebar{width:100%;height:auto;position:relative}
+  .metrics{grid-template-columns:repeat(3,1fr)}
+  .chart-row{grid-template-columns:1fr}
+  .factors-grid{grid-template-columns:repeat(2,1fr)}
+  #main{padding:14px 12px}
+  .hdr{flex-direction:column;gap:8px}
+  .hdr-actions{width:100%;justify-content:flex-start}
+  .banner{padding:14px 16px}
+  .sig{font-size:18px}
+  .b-price{font-size:20px}
+  .deploy-amt{font-size:32px}
+  .mc-val{font-size:15px}
+  .bt-stats{grid-template-columns:repeat(2,1fr)}
+  table{font-size:11px}
+  td,th{padding:6px 7px}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+</style>
 </head>
 <body>
 
-<h1>₿ Bitcoin DCA Risk Meter</h1>
-<p class="subtitle">BitcoinRaven V2 model · Risk 0–0.5 = buy · 0.5–0.6 = hold · above 0.6 = distribute</p>
-
-<div id="status-bar">
-  <div id="stat-loading" style="color:#888;">Loading data…</div>
+<div id="sidebar">
+  <h2>⚡ How This Works</h2>
+  <h3>Signal Logic</h3>
+  <p>Open this app any day. If the composite signal is in buy/sell territory, you get an exact dollar amount. No fixed schedule — quality entries only.</p>
+  <h3>Conservative Mode (2026)</h3>
+  <div class="toggle-row">
+    <label class="toggle"><input type="checkbox" id="con-toggle" checked onchange="onConToggle(this)"><div class="toggle-slider"></div></label>
+    <span style="font-size:12px;color:var(--text)">Only buy below risk 0.30</span>
+  </div>
+  <p>Diminishing returns each cycle shrink the value zone. For 2026, only accumulate below 0.3. Toggle off for the full 0–0.5 range.</p>
+  <h3>Kelly Criterion (Regime-Aware)</h3>
+  <p>Position size is set by empirical half-Kelly fractions derived from backtesting 5,780 daily BTC data points at 90-day forward returns — separately calibrated for bull, bear, and accumulation regimes.</p>
+  <div class="zone-row" id="z30-40" style="opacity:.35"><span>Risk 0.30–0.40 (conservative: off)</span><span class="zl">Accum Mid</span></div>
+  <h3>Five Signal Multipliers</h3>
+  <ul>
+    <li><strong>MVRV proxy</strong> (price ÷ 2yr avg): &lt;1.0 ×1.20 / &lt;1.5 ×1.10 / &lt;2.0 ×1.00 / &lt;2.5 ×0.90 / &lt;3.5 ×0.75 / &gt;3.5 → sell</li>
+    <li><strong>Halving cycle</strong>: early bull ×1.00 / bull peak ×0.80 / bear onset ×0.70 / deep bear ×0.90 / pre-halving ×1.10</li>
+    <li><strong>Volatility adj</strong>: caps Kelly when 30d realized vol exceeds historical 65%</li>
+    <li><strong>Fear &amp; Greed</strong>: ≤25 ×1.15 / ≤45 ×1.08 / ≤55 ×1.00 / ≤75 ×0.92 / &gt;75 ×0.85</li>
+    <li><strong>Dip vs 30d MA</strong>: &gt;10% below ×1.15 / 5–10% ×1.08 / near ×1.00 / surge ×0.85</li>
+  </ul>
+  <h3>Sell Ladder (Cowen + MVRV)</h3>
+  <ul>
+    <li>Risk 0.70–0.75 → sell 12%</li><li>Risk 0.75–0.85 → sell 25%</li>
+    <li>Risk 0.85–0.92 → sell 45%</li><li>Risk &gt;0.92 → sell 70%</li>
+    <li>MVRV &gt;3.5 (price 3.5× its 2yr avg) → sell 15%</li>
+  </ul>
+  <p>Max 80% of position sold ever. Last 20% = forever stack.</p>
+  <h3>Australian CGT — Lot Optimiser</h3>
+  <p>Every sell signal ranks your specific lots by CGT efficiency: lots held 12+ months (50% discount) recommended first, then by highest cost basis to minimise taxable gain. Tax-loss harvest opportunities flagged automatically.</p>
+  <h3>Data Storage</h3>
+  <p>All purchases and sells are saved to your browser's local storage on this device. Use <strong>Export</strong> to back up your data as a JSON file. <strong>Import</strong> to restore it on a new device or browser.</p>
+  <h3>Regime-Aware Spacing</h3>
+  <p>Minimum days between buys scales with regime and risk: Bull 3d · Accum 5d · Bear &lt;15% risk 7d · Bear 15–22% risk 14d.</p>
+  <h3>Daily Alerts</h3>
+  <p>Scheduled task checks every morning at 8am. Signal fires only when active. Silence = hold.</p>
 </div>
 
-<div class="risk-bar-wrap" id="risk-bar-wrap" style="display:none;">
-  <div class="risk-bar-label"><span>0.0 Max Buy</span><span>0.5 Neutral</span><span>1.0 Max Sell</span></div>
-  <div class="risk-bar-track"><div class="risk-bar-needle" id="risk-needle" style="left:0%"></div></div>
-</div>
+<div id="main">
+  <div class="hdr">
+    <div>
+      <h1>₿ BTC DCA Advisor</h1>
+      <div class="hdr-sub" id="last-updated">Loading live data…</div>
+    </div>
+    <div class="hdr-actions">
+      <span id="cycle-lbl" style="font-size:11px;color:var(--muted)">Cycle 1 · $10,000 budget</span>
+      <button class="btn btn-muted" onclick="openAddFunds()" style="font-size:11px;padding:6px 12px">+ Add Funds</button>
+      <button class="btn btn-muted" onclick="exportData()" style="font-size:11px;padding:6px 12px">↑ Export</button>
+      <button class="btn btn-muted" onclick="importData()" style="font-size:11px;padding:6px 12px">↓ Import</button>
+      <button class="btn btn-muted" onclick="reloadData()" style="font-size:11px;padding:6px 12px">↻ Refresh</button>
+    </div>
+  </div>
 
-<div id="loading">Fetching Bitcoin data…</div>
-<div id="chart"></div>
+  <div class="reserve-banner" id="reserve-banner">
+    💼 <strong>Cycle 2 Reserve: <span id="reserve-amt">$0</span></strong> — Risk elevated for 8+ checks. Capital held as dry powder for next cycle.
+  </div>
 
-<div class="table-wrap" id="table-wrap" style="display:none;">
-  <h2>Price targets by risk level</h2>
-  <div id="price-table"></div>
-</div>
+  <div class="banner hold" id="signal-banner">
+    <div>
+      <div class="sig" id="sig-label">Loading…</div>
+      <div class="sig-detail" id="sig-detail">Fetching blockchain data</div>
+    </div>
+    <div class="banner-right">
+      <div class="b-price" id="btc-price">—</div>
+      <div class="b-price-lbl">BTC / USD <span id="price-source" style="color:var(--green);font-size:10px"></span></div>
+      <div class="risk-pill" id="risk-pill">Risk: —</div>
+      <div id="regime-pill" style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-top:4px;background:rgba(88,166,255,.15);color:var(--blue)">Regime: —</div>
+      <div id="mvrv-pill" style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-top:4px;margin-left:4px;background:rgba(63,185,80,.15);color:var(--green)">MVRV: —</div>
+      <div id="halving-pill" style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-top:4px;margin-left:4px;background:rgba(227,179,65,.15);color:var(--yellow)">Cycle: —</div>
+    </div>
+  </div>
 
-<div class="footer">
-  Data: Blockchain.info · Formula: BitcoinRaven Risk Metric V2<br>
-  Risk 0–0.5 = accumulate · 0.5–0.6 = hold · 0.6–1.0 = distribute · <em>Not financial advice.</em>
+  <div class="metrics">
+    <div class="mc"><div class="mc-label">Deployed</div><div class="mc-val" id="m-dep">$0</div><div class="mc-sub" id="m-dep-sub">0% of $10,000</div></div>
+    <div class="mc"><div class="mc-label">Remaining</div><div class="mc-val" id="m-rem">$10,000</div><div class="mc-sub" id="m-rem-sub">Available</div></div>
+    <div class="mc"><div class="mc-label">BTC Held</div><div class="mc-val" id="m-btc">0.00000</div><div class="mc-sub" id="m-sats">0 sats</div></div>
+    <div class="mc"><div class="mc-label">Current Value</div><div class="mc-val" id="m-val">$0</div><div class="mc-sub" id="m-avg">Avg cost: —</div></div>
+    <div class="mc"><div class="mc-label">P&L</div><div class="mc-val" id="m-pnl">$0</div><div class="mc-sub" id="m-pnl-pct">0.0%</div></div>
+  </div>
+
+  <div class="card" id="buy-card" style="display:none;border-color:var(--green)">
+    <div class="card-title">📊 Buy Signal — Deploy Today</div>
+    <div style="font-size:12px;color:var(--muted)">Suggested deployment:</div>
+    <div class="deploy-amt" id="deploy-amt">$0</div>
+    <div class="deploy-sub" id="deploy-sub">≈ — sats</div>
+    <div class="zone-ind" id="zone-ind"></div>
+    <div class="factors-grid" id="factors-grid"></div>
+    <div class="confirm-row">
+      <input type="checkbox" id="buy-chk" onchange="onBuyChk(this)">
+      <label for="buy-chk">I have purchased this amount on Swyftx</label>
+      <button class="btn btn-green" id="buy-btn" disabled onclick="saveBuy()">Save &amp; Update</button>
+      <span class="save-ok" id="buy-ok">✓ Saved — reloading…</span>
+    </div>
+    <div class="manual-fields" id="buy-manual">
+      Exact amount paid ($): <input type="number" id="buy-amt-in" placeholder="350">
+      Sats received: <input type="number" id="buy-sats-in" placeholder="33333">
+    </div>
+  </div>
+
+  <div class="card" id="sell-card" style="display:none;border-color:var(--red)">
+    <div class="card-title">⚠️ Sell Signal — <span id="sell-rlbl">Elevated Risk</span></div>
+    <div style="font-size:12px;color:var(--muted)">Cowen ladder — suggested position reduction:</div>
+    <div class="sell-amt" id="sell-sats-d">— sats</div>
+    <div class="sell-sub" id="sell-val-d">≈ $—</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">Forever stack remaining: <strong id="forever-stk">—</strong></div>
+    <div class="cgt-note" id="cgt-note"></div>
+    <div class="confirm-row">
+      <input type="checkbox" id="sell-chk" onchange="onSellChk(this)">
+      <label for="sell-chk">I have executed this sell on Swyftx</label>
+      <button class="btn btn-red" id="sell-btn" disabled onclick="saveSell()">Save &amp; Update</button>
+      <span class="save-ok" id="sell-ok">✓ Saved — reloading…</span>
+    </div>
+    <div class="manual-fields" id="sell-manual">
+      Exact sats sold: <input type="number" id="sell-sats-in" placeholder="28500">
+      Sell price (USD): <input type="number" id="sell-price-in" placeholder="150000">
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Bitcoin Risk Metric (Cowen)</div>
+      <div class="chart-wrap"><canvas id="risk-chart"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Fear &amp; Greed Index</div>
+      <div style="display:flex;gap:16px;align-items:flex-start">
+        <div style="min-width:90px">
+          <div class="fg-big" id="fg-val">—</div>
+          <div class="fg-lbl" id="fg-lbl">Loading…</div>
+          <div class="fg-track" style="margin-top:12px"><div class="fg-dot" id="fg-dot" style="left:48%"></div></div>
+          <div class="fg-track-labels"><span>Fear</span><span>Neutral</span><span>Greed</span></div>
+        </div>
+        <div style="flex:1;height:160px"><canvas id="fg-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+
+  <div class="card">
+    <div class="card-title">Campaign Performance — Strategy vs Uniform DCA vs Invested</div>
+    <div class="chart-wrap"><canvas id="perf-chart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Rolling Backtest <span style="font-weight:400;text-transform:none;font-size:10px;color:var(--muted)">— All 20-week windows in BTC history</span></div>
+    <div id="bt-loading" class="loading"><span class="spin"></span>Running across all historical windows…</div>
+    <div id="bt-results" style="display:none">
+      <div class="chart-wrap" style="height:200px"><canvas id="bt-chart"></canvas></div>
+      <div class="bt-stats" id="bt-stats"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Budget Zone Allocation</div>
+    <div id="zone-bars"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Purchase History</div>
+    <div id="hist-empty" style="color:var(--muted);font-size:12px;text-align:center;padding:16px">No purchases yet.</div>
+    <div class="table-scroll">
+      <table id="hist-table" style="display:none">
+        <thead><tr><th>Date</th><th>BTC Price</th><th>Deployed</th><th>Sats</th><th>Risk</th><th>F&G</th><th>Now Worth</th><th>P&L</th></tr></thead>
+        <tbody id="hist-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" id="sell-hist-card" style="display:none">
+    <div class="card-title">Sell History</div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Date</th><th>Sell Price</th><th>Sats Sold</th><th>Proceeds</th><th>Risk</th><th>CGT Status</th></tr></thead>
+        <tbody id="sell-hist-body"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
-  const DIMINISHING_FACTOR = 0.395;
-  const MA_DAYS = 365;
+// ── PWA service worker ───────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  }
+// ── Tracker state — persisted in localStorage ────────────────────────────────
+const DEFAULT_TRACKER = {
+  total_budget: 10000, deployed: 0, remaining: 10000,
+  start_date: new Date().toISOString().split('T')[0],
+  history: [], sells: [], cycle: 1, cycle2_reserve: 0,
+  high_risk_streak: 0, conservative_mode: true, last_buy_date: null
+};
 
-  async function fetchData() {
-    const url = 'https://api.blockchain.info/charts/market-price?timespan=all&format=json&cors=true&sampled=false';
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`Blockchain.info error ${r.status}`);
-    const json = await r.json();
-    if (!json.values?.length) throw new Error('No data returned');
-    return json.values.filter(d => d.y > 0).map(d => [d.x * 1000, d.y]);
-  }
+function loadTracker() {
+  try {
+    const raw = localStorage.getItem('btc-dca-tracker');
+    return raw ? JSON.parse(raw) : { ...DEFAULT_TRACKER };
+  } catch(_) { return { ...DEFAULT_TRACKER }; }
+}
 
-  function computeRisk(rawPrices) {
-    const n = rawPrices.length;
-    const dates  = rawPrices.map(p => new Date(p[0]).toISOString().slice(0, 10));
-    const prices = rawPrices.map(p => p[1]);
+let TRACKER = loadTracker();
 
-    const ma = new Array(n);
-    for (let i = 0; i < n; i++) {
-      const start = Math.max(0, i - MA_DAYS + 1);
-      let sum = 0;
-      for (let j = start; j <= i; j++) sum += prices[j];
-      ma[i] = sum / (i - start + 1);
-    }
+function saveTracker(newT) {
+  localStorage.setItem('btc-dca-tracker', JSON.stringify(newT));
+  Object.assign(TRACKER, newT);
+}
 
-    const preavg = new Array(n);
-    for (let i = 0; i < n; i++) {
-      if (i === 0 || ma[i] <= 0 || prices[i] <= 0) { preavg[i] = null; continue; }
-      preavg[i] = (Math.log(prices[i]) - Math.log(ma[i])) * Math.pow(i, DIMINISHING_FACTOR);
-    }
+function exportData() {
+  const blob = new Blob([JSON.stringify(TRACKER, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'btc-dca-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-    let cumMin = Infinity, cumMax = -Infinity;
-    const risk = new Array(n);
-    for (let i = 0; i < n; i++) {
-      if (preavg[i] === null) { risk[i] = null; continue; }
-      if (preavg[i] < cumMin) cumMin = preavg[i];
-      if (preavg[i] > cumMax) cumMax = preavg[i];
-      const r = (preavg[i] - cumMin) / (cumMax - cumMin);
-      risk[i] = isNaN(r) ? 0 : r;
-    }
-
-    return { dates, prices, ma, risk, cumMin, cumMax, lastIndex: n - 1, lastMA: ma[n - 1] };
-  }
-
-  function priceAtRisk(r, cumMin, cumMax, lastIndex, lastMA) {
-    const preavgTarget = r * (cumMax - cumMin) + cumMin;
-    return Math.round(Math.exp(preavgTarget / Math.pow(lastIndex, DIMINISHING_FACTOR) + Math.log(lastMA)));
-  }
-
-  function signalClass(r) {
-    if (r < 0.3) return 'signal-strong-buy';
-    if (r < 0.5) return 'signal-buy';
-    if (r < 0.6) return 'signal-neutral';
-    if (r < 0.75) return 'signal-sell';
-    return 'signal-strong-sell';
-  }
-
-  function signalText(r) {
-    if (r < 0.3) return 'Strong Buy';
-    if (r < 0.5) return 'Buy';
-    if (r < 0.6) return 'Neutral / Hold';
-    if (r < 0.75) return 'Sell';
-    return 'Strong Sell';
-  }
-
-  function riskColor(r) {
-    if (r < 0.3) return '#00e676';
-    if (r < 0.5) return '#69f0ae';
-    if (r < 0.6) return '#ffd740';
-    if (r < 0.75) return '#ff6e40';
-    return '#ff1744';
-  }
-
-  function buildShapes() {
-    const shapes = [];
-    const greenOpacities = [0.22, 0.26, 0.30, 0.35, 0.40];
-    for (let i = 5; i >= 1; i--) {
-      shapes.push({ type:'rect', xref:'paper', yref:'y2', x0:0, x1:1,
-        y0:(i-1)*0.1, y1:i*0.1, fillcolor:`rgba(0,200,83,${greenOpacities[i-1]})`,
-        line:{width:0}, layer:'below' });
-    }
-    const redOpacities = [0.25, 0.38, 0.52, 0.68];
-    for (let i = 6; i < 10; i++) {
-      shapes.push({ type:'rect', xref:'paper', yref:'y2', x0:0, x1:1,
-        y0:i*0.1, y1:(i+1)*0.1, fillcolor:`rgba(213,0,0,${redOpacities[i-6]})`,
-        line:{width:0}, layer:'below' });
-    }
-    return shapes;
-  }
-
-  async function main() {
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = async (e) => {
     try {
-      const raw = await fetchData();
-      document.getElementById('loading').textContent = 'Computing risk…';
+      const text = await e.target.files[0].text();
+      const data = JSON.parse(text);
+      if (typeof data.total_budget !== 'number') throw new Error('Not a valid BTC DCA backup file.');
+      localStorage.setItem('btc-dca-tracker', JSON.stringify(data));
+      location.reload();
+    } catch(err) { alert('Import failed: ' + err.message); }
+  };
+  input.click();
+}
 
-      const { dates, prices, risk, cumMin, cumMax, lastIndex, lastMA } = computeRisk(raw);
+// ── App state ────────────────────────────────────────────────────────────────
+let allPrices=null,riskSeries=null,livePrice=null,liveRisk=null,fgSeries=null,spotPrice=null,liveRegime=null;
+let mvrvProxy=null,vol30d=null,halvingInfo=null;
+let pendingBuy=null,pendingSell=null,btDone=false;
+let conservativeMode = TRACKER.conservative_mode !== false;
 
-      const currentPrice = prices[prices.length - 1];
-      const currentRisk  = risk[risk.length - 1];
-      const lastDate     = dates[dates.length - 1];
+document.getElementById('con-toggle').checked = conservativeMode;
+document.getElementById('cycle-lbl').textContent = `Cycle ${TRACKER.cycle||1} · $${TRACKER.total_budget.toLocaleString()} budget`;
+reloadData();
 
-      document.getElementById('stat-loading').remove();
-      document.getElementById('status-bar').innerHTML = `
-        <div><div class="stat-label">Updated</div><div class="stat-value" style="font-size:13px;">${lastDate}</div></div>
-        <div><div class="stat-label">BTC Price</div><div class="stat-value" style="color:#f5c842;">$${Math.round(currentPrice).toLocaleString()}</div></div>
-        <div><div class="stat-label">Risk Score</div><div class="stat-value" style="color:${riskColor(currentRisk)}">${currentRisk.toFixed(3)}</div></div>
-        <div><div class="stat-label">Signal</div><div class="stat-value ${signalClass(currentRisk)}" style="font-size:13px;">${signalText(currentRisk)}</div></div>
-      `;
-
-      document.getElementById('risk-bar-wrap').style.display = 'block';
-      document.getElementById('risk-needle').style.left = `${(currentRisk * 100).toFixed(1)}%`;
-      document.getElementById('loading').style.display = 'none';
-
-      const isMobile = window.innerWidth < 600;
-
-      Plotly.newPlot('chart', [
-        { x: dates, y: prices, name: 'BTC Price (USD)', type: 'scatter', mode: 'lines',
-          line: { color: '#f5c842', width: isMobile ? 1 : 1.5 }, yaxis: 'y' },
-        { x: dates, y: risk,   name: 'Risk Metric',    type: 'scatter', mode: 'lines',
-          line: { color: 'rgba(255,255,255,0.85)', width: 1 }, yaxis: 'y2' }
-      ], {
-        paper_bgcolor: '#13171c', plot_bgcolor: '#13171c',
-        font: { color: '#c0c0c0', size: isMobile ? 10 : 12 },
-        xaxis: { showgrid: false, type: 'date', color: '#666', linecolor: '#333' },
-        yaxis: { title: isMobile ? '' : 'Price (USD)', type: 'log', showgrid: false,
-          side: 'left', color: '#f5c842', tickfont: { color: '#f5c842', size: isMobile ? 9 : 11 } },
-        yaxis2: { title: isMobile ? '' : 'Risk', overlaying: 'y', side: 'right', range: [0,1],
-          showgrid: true, gridcolor: 'rgba(255,255,255,0.06)', tick0: 0, dtick: 0.1,
-          tickformat: '.1f', color: '#999', tickfont: { color: '#999', size: isMobile ? 9 : 11 } },
-        shapes: buildShapes(),
-        legend: { x: 0.01, y: 0.99, bgcolor: 'rgba(0,0,0,0.4)', bordercolor: '#333',
-          borderwidth: 1, font: { size: isMobile ? 10 : 12 } },
-        margin: { l: isMobile ? 44 : 60, r: isMobile ? 44 : 60, t: 12, b: isMobile ? 36 : 50 }
-      }, { responsive: true, displaylogo: false,
-        modeBarButtonsToRemove: ['select2d','lasso2d','toImage'] });
-
-      let html = `<table>
-        <thead><tr><th>Risk</th><th>Signal</th><th>Est. BTC price</th></tr></thead><tbody>`;
-      for (let i = 0; i <= 9; i++) {
-        const r = i / 10;
-        const price = priceAtRisk(r, cumMin, cumMax, lastIndex, lastMA);
-        const isCurrent = currentRisk >= r && currentRisk < r + 0.1;
-        const rowStyle = isCurrent ? 'background:#1e2a18;outline:1px solid #f5c842;' : '';
-        html += `<tr style="${rowStyle}">
-          <td>${r.toFixed(1)}${isCurrent ? ' ◀' : ''}</td>
-          <td class="${signalClass(r)}">${signalText(r)}</td>
-          <td>$${price.toLocaleString()}</td></tr>`;
-      }
-      html += '</tbody></table>';
-      document.getElementById('price-table').innerHTML = html;
-      document.getElementById('table-wrap').style.display = 'block';
-
-    } catch (err) {
-      document.getElementById('loading').innerHTML =
-        `<span style="color:#ff5252;">Error: ${err.message}</span><br>
-         <small style="color:#888;">Blockchain.info may be rate-limited — wait 60s and refresh.</small>`;
-    }
+async function reloadData(){
+  document.getElementById('last-updated').textContent = 'Refreshing…';
+  try {
+    const [pr, fg] = await Promise.all([
+      fetch('https://api.blockchain.info/charts/market-price?timespan=all&format=json&cors=true&sampled=false'),
+      fetch('https://api.alternative.me/fng/?limit=7&format=json')
+    ]);
+    const pj = await pr.json(), fj = await fg.json();
+    allPrices = pj.values; fgSeries = fj.data;
+    try {
+      const sr = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+      const sj = await sr.json();
+      spotPrice = sj.bitcoin?.usd || null;
+    } catch(_) { spotPrice = null; }
+    processAll();
+  } catch(e) {
+    document.getElementById('last-updated').textContent = 'Error loading — ' + e.message;
   }
+}
 
-  main();
+function computeRisk(data) {
+  const vals = data.filter(d=>d.y>0).sort((a,b)=>a.x-b.x);
+  const prices = vals.map(d=>d.y);
+  const n = prices.length;
+  const ma365arr = []; let s365 = 0;
+  for (let i=0;i<n;i++) { s365+=prices[i]; if(i>=365)s365-=prices[i-365]; ma365arr.push(s365/Math.min(i+1,365)); }
+  const preavg = prices.map((p,i) => Math.log(p/ma365arr[i]) * Math.pow(Math.max(1,i-363), 0.395));
+  let cmin=Infinity, cmax=-Infinity;
+  const out = preavg.map((v,i) => {
+    cmin=Math.min(cmin,v); cmax=Math.max(cmax,v);
+    const risk = cmax>cmin ? (v-cmin)/(cmax-cmin) : 0.5;
+    return { x:vals[i].x, price:prices[i], risk, ma365:ma365arr[i] };
+  });
+  return out;
+}
+
+function computeVol30d(prices) {
+  if (prices.length<31) return 0.65;
+  const recent = prices.slice(-31);
+  const rets = []; for(let i=1;i<recent.length;i++) rets.push(Math.log(recent[i]/recent[i-1]));
+  const mean = rets.reduce((a,b)=>a+b,0)/rets.length;
+  const variance = rets.reduce((a,r)=>a+Math.pow(r-mean,2),0)/rets.length;
+  return Math.sqrt(variance*365);
+}
+
+function halvingCycleInfo() {
+  const halvings = [new Date('2012-11-28'),new Date('2016-07-09'),new Date('2020-05-11'),new Date('2024-04-19')];
+  const now = new Date();
+  const last = halvings.filter(h=>h<=now).pop();
+  const cycleMs = 4*365.25*24*3600*1000;
+  const next = new Date(last.getTime()+cycleMs);
+  const progress = (now-last)/(next-last);
+  const monthsIn = Math.round((now-last)/(30.44*24*3600*1000));
+  let mult,lbl,col;
+  if(progress<0.25){mult=1.00;lbl=`Early bull (mo ${monthsIn})`;col='var(--green)';}
+  else if(progress<0.45){mult=0.80;lbl=`Bull peak (mo ${monthsIn})`;col='var(--yellow)';}
+  else if(progress<0.65){mult=0.70;lbl=`Bear onset (mo ${monthsIn})`;col='var(--red)';}
+  else if(progress<0.85){mult=0.90;lbl=`Deep bear (mo ${monthsIn})`;col='var(--blue)';}
+  else{mult=1.10;lbl=`Pre-halving (mo ${monthsIn})`;col='var(--green)';}
+  return{progress,monthsIn,mult,lbl,col,lastHalving:last.toISOString().split('T')[0],nextHalving:next.toISOString().split('T')[0]};
+}
+
+function mvrvSignal(mvrv) {
+  let mult,lbl,col;
+  if(mvrv<1.0){mult=1.20;lbl='Extreme undervalue';col='var(--green)';}
+  else if(mvrv<1.5){mult=1.10;lbl='Undervalued';col='var(--green)';}
+  else if(mvrv<2.0){mult=1.00;lbl='Fair value';col='var(--yellow)';}
+  else if(mvrv<2.5){mult=0.90;lbl='Slightly over';col='var(--yellow)';}
+  else if(mvrv<3.5){mult=0.75;lbl='Overvalued';col='var(--orange)';}
+  else{mult=0.50;lbl='Extreme — sell zone';col='var(--red)';}
+  return{mult,lbl,col,value:mvrv};
+}
+
+function getCGTOptimalLots(price) {
+  const today = new Date();
+  return (TRACKER.history||[]).map((h,idx) => {
+    const daysHeld = Math.floor((today-new Date(h.date))/86400000);
+    const cgtEligible = daysHeld>=365;
+    const gain = price-h.price;
+    const gainPct = gain/h.price*100;
+    const daysToDiscount = cgtEligible?0:Math.max(0,365-daysHeld);
+    const eligDate = new Date(new Date(h.date).getTime()+365*86400000).toLocaleDateString('en-AU');
+    return{idx,date:h.date,costBasis:h.price,sats:h.sats,amount:h.amount,daysHeld,cgtEligible,gain,gainPct,daysToDiscount,eligDate};
+  }).sort((a,b)=>{
+    if(a.gain<0&&b.gain>=0) return -1;
+    if(b.gain<0&&a.gain>=0) return 1;
+    if(a.cgtEligible!==b.cgtEligible) return a.cgtEligible?-1:1;
+    return b.costBasis-a.costBasis;
+  });
+}
+
+function calcDeployment(risk,fgVal,price,ma30,regime,v30d,halvInfo,mvrv) {
+  const rem = TRACKER.remaining;
+  if(rem<=0) return{signal:'COMPLETE',amount:0};
+  if(TRACKER.last_buy_date){
+    const daysSince = Math.floor((Date.now()-new Date(TRACKER.last_buy_date).getTime())/86400000);
+    const minDays = regime==='bull'?3:regime==='bear'?(risk<0.15?7:14):5;
+    if(daysSince<minDays) return{signal:'COOLDOWN',amount:0,daysLeft:minDays-daysSince,minDays,regime};
+  }
+  const KELLY = {
+    bull:[
+      {lo:0.20,hi:0.30,kelly:0.50,wr:100,lbl:'Bull 20–30%'},
+      {lo:0.30,hi:0.40,kelly:0.45,wr:91,lbl:'Bull 30–40%'},
+      {lo:0.40,hi:0.60,kelly:0.30,wr:67,lbl:'Bull 40–60%'},
+    ],
+    bear:[
+      {lo:0.10,hi:0.22,kelly:0.25,wr:66,lbl:'Bear Dip Window'},
+    ],
+    accumulation:[
+      {lo:0.00,hi:0.10,kelly:0.36,wr:78,lbl:'Accum Ultra-Low'},
+      {lo:0.10,hi:0.20,kelly:0.19,wr:57,lbl:'Accum Low'},
+      {lo:0.20,hi:0.30,kelly:0.18,wr:58,lbl:'Accum Moderate'},
+      {lo:0.30,hi:0.40,kelly:0.20,wr:59,lbl:'Accum Mid'},
+      {lo:0.40,hi:0.50,kelly:0.26,wr:68,lbl:'Accum High-Mid'},
+    ]
+  };
+  const buckets = KELLY[regime]||KELLY.accumulation;
+  const entry = conservativeMode
+    ? buckets.find(b=>risk>=b.lo&&risk<b.hi&&risk<0.30)
+    : buckets.find(b=>risk>=b.lo&&risk<b.hi);
+  if(!entry) return{signal:'HOLD',amount:0,regime};
+  const kellyFrac = entry.kelly;
+  const baseAmt = rem*kellyFrac;
+  let fgMult,fgLbl;
+  if(fgVal<=25){fgMult=1.15;fgLbl='Extreme Fear';}
+  else if(fgVal<=45){fgMult=1.08;fgLbl='Fear';}
+  else if(fgVal<=55){fgMult=1.00;fgLbl='Neutral';}
+  else if(fgVal<=75){fgMult=0.92;fgLbl='Greed';}
+  else{fgMult=0.85;fgLbl='Extreme Greed';}
+  const dipPct = (price-ma30)/ma30;
+  let dipMult,dipLbl;
+  if(dipPct<-0.10){dipMult=1.15;dipLbl='Deep dip >10%';}
+  else if(dipPct<-0.05){dipMult=1.08;dipLbl='Dip 5–10%';}
+  else if(dipPct>0.10){dipMult=0.85;dipLbl='Surge >10%';}
+  else{dipMult=1.00;dipLbl='Near 30d MA';}
+  const TARGET_VOL=0.65;
+  const volAdj = v30d ? Math.min(1.0,TARGET_VOL/v30d) : 1.0;
+  const volLbl = v30d ? `${(v30d*100).toFixed(0)}% ann vol (adj ×${volAdj.toFixed(2)})` : 'N/A';
+  const halvMult = halvInfo?halvInfo.mult:1.0;
+  const halvLbl = halvInfo?halvInfo.lbl:'—';
+  const ms = mvrvSignal(mvrv||1.5);
+  const mvrvMult = ms.mult;
+  const mvrvLbl = ms.lbl;
+  let amount = baseAmt*fgMult*dipMult*volAdj*halvMult*mvrvMult;
+  amount = Math.min(amount, rem*0.25);
+  amount = Math.round(amount/50)*50;
+  amount = Math.max(50, Math.min(amount, rem));
+  return{signal:kellyFrac>=0.30?'STRONG BUY':'BUY',amount,kellyFrac,winRate:entry.wr,zoneLbl:entry.lbl,baseAmt,fgMult,fgLbl,dipMult,dipLbl,dipPct,regime,fgVal,volAdj,volLbl,halvMult,halvLbl,mvrvMult,mvrvLbl,mvrv:mvrv||null};
+}
+
+function calcSell(risk,price,mvrv) {
+  const held = getHeldSats();
+  if(held<=0) return null;
+  const mvrvSell = (mvrv||0)>=3.5;
+  const riskSell = risk>=0.70;
+  if(!riskSell&&!mvrvSell) return null;
+  let sellPct,rLbl;
+  if(risk>=0.92){sellPct=0.70;rLbl='EXTREME RISK';}
+  else if(risk>=0.85){sellPct=0.45;rLbl='VERY HIGH RISK';}
+  else if(risk>=0.75){sellPct=0.25;rLbl='HIGH RISK';}
+  else if(risk>=0.70){sellPct=0.12;rLbl='ELEVATED RISK';}
+  else{sellPct=0.15;rLbl=`MVRV OVERVALUED (${(mvrv||0).toFixed(2)}×)`;}
+  const sellSats = Math.min(Math.round(held*sellPct), Math.round(held*0.80));
+  const remSats = held-sellSats;
+  const sellVal = (sellSats/1e8)*price;
+  const cgtLots = getCGTOptimalLots(price);
+  let cgtNote='',cgtCls='cgt-warn',cgtHtml='';
+  if(cgtLots.length>0){
+    const best=cgtLots[0];
+    if(best.gain<0){cgtNote=`💡 Tax-loss opportunity: ${best.date} lot bought at $${best.costBasis.toLocaleString()} — currently at a loss ($${best.gainPct.toFixed(1)}%). Selling this lot generates a capital loss you can offset against other gains.`;cgtCls='cgt-ok';}
+    else if(best.cgtEligible){cgtNote=`✅ CGT-optimal lot: ${best.date} (${best.daysHeld} days held — 50% discount applies). Cost $${best.costBasis.toLocaleString()}/BTC, unrealised gain +${best.gainPct.toFixed(1)}% (taxed on 50% only).`;cgtCls='cgt-ok';}
+    else{cgtNote=`⚠️ No CGT-eligible lots yet. Best lot: ${best.date} (${best.daysHeld} days — ${best.daysToDiscount} more days until 50% discount on ${best.eligDate}). Full gain taxable if you sell now.`;}
+    if(cgtLots.length>1){cgtHtml=`<div style="margin-top:9px;font-size:10px;opacity:.65;line-height:1.6"><strong>All lots ranked by CGT efficiency:</strong><br>${cgtLots.map((l,i)=>`${i+1}. ${l.date} — cost $${l.costBasis.toLocaleString()}, ${l.daysHeld}d held ${l.cgtEligible?'<span style="color:var(--green)">✅ 50% discount</span>':l.daysToDiscount>0?`<span style="color:var(--yellow)">⏳ ${l.daysToDiscount}d to discount</span>`:'full tax'}, gain ${l.gainPct>=0?'+':''}${l.gainPct.toFixed(1)}%`).join('<br>')}</div>`;}
+  }
+  return{rLbl,sellSats,remSats,sellVal,cgtNote,cgtCls,cgtHtml};
+}
+
+function getHeldSats() {
+  const b = (TRACKER.history||[]).reduce((s,h)=>s+(h.sats||0),0);
+  const sold = (TRACKER.sells||[]).reduce((s,v)=>s+(v.sats||0),0);
+  return b-sold;
+}
+
+function fgColor(v){if(v<=25)return'#3fb950';if(v<=45)return'#8bc34a';if(v<=55)return'#e3b341';if(v<=75)return'#f78166';return'#f85149';}
+function fgLabel(v){if(v<=25)return'Extreme Fear';if(v<=45)return'Fear';if(v<=55)return'Neutral';if(v<=75)return'Greed';return'Extreme Greed';}
+function rColor(r){if(r<0.30)return'var(--green)';if(r<0.65)return'var(--yellow)';return'var(--red)';}
+
+function processAll() {
+  riskSeries = computeRisk(allPrices);
+  const valid = riskSeries.filter(d=>d.risk!==null);
+  const last = valid[valid.length-1];
+  livePrice=last.price; liveRisk=last.risk;
+  const prices = allPrices.map(d=>d.y).filter(p=>p>0);
+  const n = prices.length;
+  function runMA(arr,period){let s=0,r=[];for(let i=0;i<arr.length;i++){s+=arr[i];if(i>=period)s-=arr[i-period];r.push(s/Math.min(i+1,period));}return r;}
+  const ma200arr=runMA(prices,200);
+  const ma50val=prices.slice(-50).reduce((a,b)=>a+b,0)/50;
+  const ma200val=ma200arr[n-1];
+  const ma200_40d=ma200arr[Math.max(0,n-41)];
+  const slope200=(ma200val-ma200_40d)/ma200_40d;
+  const cp=prices[n-1];
+  liveRegime=cp>ma200val*1.05&&ma50val>ma200val&&slope200>0.01?'bull':cp<ma200val*0.95&&ma50val<ma200val&&slope200<-0.01?'bear':'accumulation';
+  const ma730arr=[];let s730=0;
+  for(let i=0;i<n;i++){s730+=prices[i];if(i>=730)s730-=prices[i-730];ma730arr.push(s730/Math.min(i+1,730));}
+  mvrvProxy=prices[n-1]/ma730arr[n-1];
+  vol30d=computeVol30d(prices);
+  halvingInfo=halvingCycleInfo();
+  const displayPrice=spotPrice||livePrice;
+  const fg=parseInt(fgSeries[0].value);
+  const ma30=prices.slice(-30).reduce((a,b)=>a+b,0)/30;
+  pendingBuy=calcDeployment(liveRisk,fg,livePrice,ma30,liveRegime,vol30d,halvingInfo,mvrvProxy);
+  pendingSell=calcSell(liveRisk,livePrice,mvrvProxy);
+  updateBanner(liveRisk,fg,livePrice);
+  updateMetrics(displayPrice);
+  renderBuyCard(pendingBuy,displayPrice);
+  renderSellCard(pendingSell,livePrice);
+  renderZoneBars();
+  renderRiskChart(valid);
+  renderFG(fgSeries);
+  renderPerfChart(displayPrice);
+  renderHistory(displayPrice);
+  updateReserve();
+  const now=new Date();
+  document.getElementById('last-updated').textContent=`Updated ${now.toLocaleDateString('en-AU')} ${now.toLocaleTimeString('en-AU')}  ·  Risk: ${(liveRisk*100).toFixed(1)}%`;
+  if(!btDone){runBacktest();btDone=true;}
+}
+
+function updateBanner(risk,fg,price) {
+  const b=document.getElementById('signal-banner');
+  b.className='banner';
+  const dispPrice=spotPrice||price;
+  document.getElementById('btc-price').textContent='$'+dispPrice.toLocaleString('en-AU',{maximumFractionDigits:0});
+  document.getElementById('price-source').textContent=spotPrice?'● LIVE':'● delayed';
+  const pill=document.getElementById('risk-pill');
+  pill.textContent=`Risk: ${(risk*100).toFixed(1)}%`;
+  pill.style.background=risk<0.30?'rgba(63,185,80,.2)':risk<0.65?'rgba(227,179,65,.2)':'rgba(248,81,73,.2)';
+  pill.style.color=rColor(risk);
+  const rp=document.getElementById('regime-pill');
+  const regimeColor=liveRegime==='bull'?'#3fb950':liveRegime==='bear'?'#f85149':'#58a6ff';
+  rp.textContent=`Regime: ${liveRegime||'—'}`;
+  rp.style.background=liveRegime==='bull'?'rgba(63,185,80,.15)':liveRegime==='bear'?'rgba(248,81,73,.15)':'rgba(88,166,255,.15)';
+  rp.style.color=regimeColor;
+  if(mvrvProxy!=null){
+    const ms=mvrvSignal(mvrvProxy);
+    const mp=document.getElementById('mvrv-pill');
+    mp.textContent=`MVRV: ${mvrvProxy.toFixed(2)} (${ms.lbl})`;
+    mp.style.background=mvrvProxy<2.0?'rgba(63,185,80,.15)':mvrvProxy<3.5?'rgba(227,179,65,.15)':'rgba(248,81,73,.15)';
+    mp.style.color=ms.col;
+  }
+  if(halvingInfo){
+    const hp=document.getElementById('halving-pill');
+    hp.textContent=`Cycle: ${halvingInfo.lbl}`;
+    hp.style.color=halvingInfo.col;
+    hp.style.background=halvingInfo.col==='var(--green)'?'rgba(63,185,80,.15)':halvingInfo.col==='var(--yellow)'?'rgba(227,179,65,.15)':halvingInfo.col==='var(--red)'?'rgba(248,81,73,.15)':'rgba(88,166,255,.15)';
+  }
+  if(TRACKER.remaining<=0&&!pendingSell){
+    b.classList.add('done');
+    document.getElementById('sig-label').textContent='✅ Campaign Complete';
+    document.getElementById('sig-detail').textContent=`All $${TRACKER.total_budget.toLocaleString()} deployed. Monitoring sell signals.`;
+  }else if(pendingSell){
+    b.classList.add('sell');
+    document.getElementById('sig-label').textContent=`🔴 SELL SIGNAL — ${pendingSell.rLbl}`;
+    document.getElementById('sig-detail').textContent=`Risk ${(risk*100).toFixed(1)}% · Sell ${pendingSell.sellSats.toLocaleString()} sats ≈ $${pendingSell.sellVal.toLocaleString('en-AU',{maximumFractionDigits:0})}`;
+  }else if(pendingBuy&&pendingBuy.signal==='STRONG BUY'){
+    b.classList.add('sbuy');
+    document.getElementById('sig-label').textContent='🟢 STRONG BUY SIGNAL';
+    document.getElementById('sig-detail').textContent=`Risk ${(risk*100).toFixed(1)}% · F&G ${fg} (${fgLabel(fg)}) · Deploy $${pendingBuy.amount.toLocaleString()} today`;
+  }else if(pendingBuy&&pendingBuy.signal==='BUY'){
+    b.classList.add('buy');
+    document.getElementById('sig-label').textContent='🟡 BUY SIGNAL';
+    document.getElementById('sig-detail').textContent=`Risk ${(risk*100).toFixed(1)}% · F&G ${fg} (${fgLabel(fg)}) · Deploy $${pendingBuy.amount.toLocaleString()} today`;
+  }else if(pendingBuy&&pendingBuy.signal==='COOLDOWN'){
+    b.classList.add('hold');
+    const nextDate=new Date(new Date(TRACKER.last_buy_date).getTime()+(pendingBuy.minDays||3)*86400000).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    document.getElementById('sig-label').textContent=`⏳ COOLDOWN — Next window ${nextDate} (${pendingBuy.daysLeft} day${pendingBuy.daysLeft===1?'':'s'})`;
+    document.getElementById('sig-detail').textContent=`Risk ${(risk*100).toFixed(1)}% · Regime: ${liveRegime} · ${pendingBuy.minDays}-day spacing · Last buy: ${TRACKER.last_buy_date}`;
+  }else{
+    b.classList.add('hold');
+    const regimeLbl=liveRegime==='bull'?'Bull — outside buy zone':liveRegime==='bear'?'Bear — outside dip window (need risk 10–22%)':'Accum — outside buy zone (need risk < '+(conservativeMode?'30%':'50%')+')';
+    document.getElementById('sig-label').textContent='⏸ HOLD — No Signal';
+    document.getElementById('sig-detail').textContent=`Risk ${(risk*100).toFixed(1)}% · ${regimeLbl} · F&G ${fg} (${fgLabel(fg)})`;
+  }
+}
+
+function updateMetrics(price) {
+  const{total_budget:tb,deployed:dep,remaining:rem,history:hist}=TRACKER;
+  const heldSats=getHeldSats(),heldBTC=heldSats/1e8;
+  const val=heldBTC*price;
+  const cost=(hist||[]).reduce((s,h)=>s+h.amount,0);
+  const avgCost=heldBTC>0?cost/heldBTC:0;
+  const pnl=val-cost,pnlPct=cost>0?pnl/cost*100:0;
+  document.getElementById('m-dep').textContent='$'+dep.toLocaleString();
+  document.getElementById('m-dep-sub').textContent=`${(dep/tb*100).toFixed(1)}% of $${tb.toLocaleString()}`;
+  document.getElementById('m-rem').textContent='$'+rem.toLocaleString();
+  document.getElementById('m-rem-sub').textContent=rem>0?'Available':'✅ Fully deployed';
+  document.getElementById('m-btc').textContent=heldBTC.toFixed(5);
+  document.getElementById('m-sats').textContent=heldSats.toLocaleString()+' sats';
+  document.getElementById('m-val').textContent='$'+val.toLocaleString('en-AU',{maximumFractionDigits:0});
+  document.getElementById('m-avg').textContent=heldSats>0?`Avg $${avgCost.toLocaleString('en-AU',{maximumFractionDigits:0})}`:'—';
+  const pe=document.getElementById('m-pnl');
+  pe.textContent=(pnl>=0?'+$':'-$')+Math.abs(pnl).toLocaleString('en-AU',{maximumFractionDigits:0});
+  pe.className='mc-val '+(pnl>=0?'pos':'neg');
+  document.getElementById('m-pnl-pct').textContent=(pnlPct>=0?'+':'')+pnlPct.toFixed(1)+'%';
+}
+
+function renderBuyCard(dep,price) {
+  const c=document.getElementById('buy-card');
+  if(!dep||dep.signal==='HOLD'||dep.signal==='COMPLETE'||dep.signal==='SAME_DAY'||dep.signal==='COOLDOWN'){c.style.display='none';return;}
+  c.style.display='block';
+  const estSats=Math.round((dep.amount/price)*1e8);
+  document.getElementById('deploy-amt').textContent='$'+dep.amount.toLocaleString();
+  document.getElementById('deploy-sub').textContent=`≈ ${estSats.toLocaleString()} sats at $${price.toLocaleString('en-AU',{maximumFractionDigits:0})}`;
+  document.getElementById('zone-ind').innerHTML=`<strong>${dep.zoneLbl}</strong> · Kelly ${(dep.kellyFrac*100).toFixed(0)}% of remaining = $${Math.round(dep.baseAmt).toLocaleString()} base → after all multipliers: <strong>$${dep.amount.toLocaleString()}</strong>`;
+  const mvrvClr=dep.mvrv!=null?(dep.mvrv<2.0?'var(--green)':dep.mvrv<3.5?'var(--yellow)':'var(--red)'):'var(--muted)';
+  document.getElementById('factors-grid').innerHTML=`
+    <div class="factor"><div class="factor-name">Regime</div><div class="factor-val" style="color:${dep.regime==='bull'?'var(--green)':dep.regime==='bear'?'var(--red)':'var(--blue)'}">${dep.regime}</div></div>
+    <div class="factor"><div class="factor-name">90d Win Rate</div><div class="factor-val" style="color:var(--green)">${dep.winRate}%</div></div>
+    <div class="factor"><div class="factor-name">Kelly Fraction</div><div class="factor-val">${(dep.kellyFrac*100).toFixed(0)}% of rem</div></div>
+    <div class="factor"><div class="factor-name">F&G: ${dep.fgLbl}</div><div class="factor-val">${dep.fgMult>=1?'↑':'↓'}${dep.fgMult.toFixed(2)}×</div></div>
+    <div class="factor"><div class="factor-name">Dip: ${dep.dipLbl}</div><div class="factor-val">${dep.dipMult>=1?'↑':'↓'}${dep.dipMult.toFixed(2)}×</div></div>
+    <div class="factor"><div class="factor-name">MVRV: ${dep.mvrvLbl||'—'}</div><div class="factor-val" style="color:${mvrvClr}">${dep.mvrvMult!=null?(dep.mvrvMult>=1?'↑':'↓')+dep.mvrvMult.toFixed(2)+'×':'—'}</div></div>
+    <div class="factor"><div class="factor-name">Vol Adj</div><div class="factor-val">×${dep.volAdj!=null?dep.volAdj.toFixed(2):'1.00'} <span style="font-size:10px;color:var(--muted)">${dep.volLbl||''}</span></div></div>
+    <div class="factor"><div class="factor-name">Cycle: ${dep.halvLbl||'—'}</div><div class="factor-val">${dep.halvMult!=null?(dep.halvMult>=1?'↑':'↓')+dep.halvMult.toFixed(2)+'×':'—'}</div></div>
+    <div class="factor"><div class="factor-name">Remaining After</div><div class="factor-val">$${(TRACKER.remaining-dep.amount).toLocaleString()}</div></div>
+  `;
+  document.getElementById('buy-amt-in').value=dep.amount;
+  document.getElementById('buy-sats-in').value=estSats;
+  document.getElementById('sell-card').style.display='none';
+}
+
+function renderSellCard(sell,price) {
+  const c=document.getElementById('sell-card');
+  if(!sell){c.style.display='none';return;}
+  c.style.display='block';
+  document.getElementById('buy-card').style.display='none';
+  document.getElementById('sell-rlbl').textContent=sell.rLbl;
+  document.getElementById('sell-sats-d').textContent=sell.sellSats.toLocaleString()+' sats';
+  document.getElementById('sell-val-d').textContent=`≈ $${sell.sellVal.toLocaleString('en-AU',{maximumFractionDigits:0})} at $${price.toLocaleString('en-AU',{maximumFractionDigits:0})}`;
+  document.getElementById('forever-stk').textContent=`${sell.remSats.toLocaleString()} sats (≈ $${((sell.remSats/1e8)*price).toLocaleString('en-AU',{maximumFractionDigits:0})})`;
+  const cn=document.getElementById('cgt-note');
+  cn.innerHTML=sell.cgtNote+(sell.cgtHtml||''); cn.className='cgt-note '+sell.cgtCls;
+  document.getElementById('sell-sats-in').value=sell.sellSats;
+  document.getElementById('sell-price-in').value=Math.round(price);
+}
+
+function renderZoneBars() {
+  const rem=TRACKER.remaining;
+  const KELLY_ZONES={
+    bull:[
+      {lbl:'Bull 20–30% risk',kelly:0.50,wr:100,col:'#3fb950',active:liveRisk>=0.20&&liveRisk<0.30},
+      {lbl:'Bull 30–40% risk',kelly:0.45,wr:91,col:'#8bc34a',active:liveRisk>=0.30&&liveRisk<0.40},
+      {lbl:'Bull 40–60% risk',kelly:0.30,wr:67,col:'#e3b341',active:liveRisk>=0.40&&liveRisk<0.60},
+    ],
+    bear:[
+      {lbl:'Bear dip window (10–22% risk)',kelly:0.25,wr:66,col:'#58a6ff',active:liveRisk>=0.10&&liveRisk<0.22},
+      {lbl:'Bear — all other zones (no edge)',kelly:0,wr:0,col:'#f85149',active:false,noEdge:true},
+    ],
+    accumulation:[
+      {lbl:'Accum ultra-low < 10% risk',kelly:0.36,wr:78,col:'#3fb950',active:liveRisk<0.10},
+      {lbl:'Accum low 10–20% risk',kelly:0.19,wr:57,col:'#8bc34a',active:liveRisk>=0.10&&liveRisk<0.20},
+      {lbl:'Accum moderate 20–30%',kelly:0.18,wr:58,col:'#e3b341',active:liveRisk>=0.20&&liveRisk<0.30},
+      {lbl:'Accum mid 30–40%',kelly:0.20,wr:59,col:'#f78166',active:liveRisk>=0.30&&liveRisk<0.40},
+      {lbl:'Accum high-mid 40–50%',kelly:0.26,wr:68,col:'#f78166',active:liveRisk>=0.40&&liveRisk<0.50},
+    ]
+  };
+  const regime=liveRegime||'accumulation';
+  const zones=KELLY_ZONES[regime]||KELLY_ZONES.accumulation;
+  document.getElementById('zone-bars').innerHTML=`<div style="font-size:11px;color:var(--muted);margin-bottom:10px">Regime: <strong style="color:${regime==='bull'?'var(--green)':regime==='bear'?'var(--red)':'var(--blue)'}">${regime}</strong> — Kelly fractions × $${rem.toLocaleString()} remaining</div>`+zones.map(z=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;${z.noEdge?'opacity:.35':''}${z.active?' outline:2px solid '+z.col+';border-radius:4px;padding:2px 4px;margin-left:-4px':''}">
+      <div style="width:220px;font-size:11px;color:${z.active?'var(--text)':'var(--muted)'}">${z.lbl}${z.active?' ◀ NOW':''}</div>
+      <div style="flex:1;background:var(--bg);border-radius:4px;height:14px;overflow:hidden">
+        <div style="width:${z.kelly*100}%;height:100%;background:${z.col};border-radius:4px;min-width:${z.kelly>0?'2px':'0'}"></div>
+      </div>
+      <div style="width:80px;font-size:11px;text-align:right;color:var(--text)">${z.kelly>0?`${(z.kelly*100).toFixed(0)}% · ${z.wr}% WR`:'No edge'}</div>
+    </div>`).join('');
+}
+
+let riskCh=null;
+function renderRiskChart(valid) {
+  const s=valid.filter((_,i)=>i%14===0||i===valid.length-1);
+  const labels=s.map(d=>new Date(d.x*1000).toLocaleDateString('en-AU',{year:'2-digit',month:'short'}));
+  if(riskCh)riskCh.destroy();
+  riskCh=new Chart(document.getElementById('risk-chart'),{
+    data:{labels,datasets:[
+      {type:'line',label:'BTC Price',data:s.map(d=>d.price),yAxisID:'price',borderColor:'#f78166',borderWidth:1.5,pointRadius:0,fill:false},
+      {type:'line',label:'Risk Score',data:s.map(d=>d.risk),yAxisID:'risk',borderColor:'#58a6ff',borderWidth:2,pointRadius:0,fill:true,backgroundColor:'rgba(88,166,255,.07)'}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},
+      scales:{
+        x:{ticks:{color:'#8b949e',maxTicksLimit:14,font:{size:9},maxRotation:45},grid:{color:'rgba(48,54,61,.4)'}},
+        price:{position:'left',type:'logarithmic',ticks:{color:'#f78166',font:{size:9},callback:v=>'$'+(v>=1000?(v/1000).toFixed(0)+'k':v)},grid:{color:'rgba(48,54,61,.3)'}},
+        risk:{position:'right',min:0,max:1,ticks:{color:'#58a6ff',font:{size:9}},grid:{display:false}}
+      }
+    }
+  });
+}
+
+let fgCh=null;
+function renderFG(data) {
+  const cur=parseInt(data[0].value);
+  document.getElementById('fg-val').textContent=cur;
+  document.getElementById('fg-val').style.color=fgColor(cur);
+  document.getElementById('fg-lbl').textContent=fgLabel(cur);
+  document.getElementById('fg-dot').style.left=Math.max(2,Math.min(90,cur*0.9))+'%';
+  const rev=[...data].reverse();
+  if(fgCh)fgCh.destroy();
+  fgCh=new Chart(document.getElementById('fg-chart'),{
+    type:'bar',
+    data:{labels:rev.map(d=>new Date(parseInt(d.timestamp)*1000).toLocaleDateString('en-AU',{weekday:'short'})),
+          datasets:[{data:rev.map(d=>parseInt(d.value)),backgroundColor:rev.map(d=>fgColor(parseInt(d.value))),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#8b949e',font:{size:9}},grid:{display:false}},
+              y:{min:0,max:100,ticks:{color:'#8b949e',font:{size:9},stepSize:25},grid:{color:'rgba(48,54,61,.4)'}}}}
+  });
+}
+
+let perfCh=null;
+function renderPerfChart(price) {
+  const hist=TRACKER.history||[];
+  if(perfCh)perfCh.destroy();
+  const opts={responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#8b949e',font:{size:11}}}},
+    scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(48,54,61,.4)'}},
+            y:{ticks:{color:'#8b949e',callback:v=>'$'+v.toLocaleString('en-AU',{maximumFractionDigits:0})},grid:{color:'rgba(48,54,61,.4)'}}}};
+  if(hist.length===0){
+    perfCh=new Chart(document.getElementById('perf-chart'),{type:'line',
+      data:{labels:['Start'],datasets:[
+        {label:'Your Strategy',data:[TRACKER.total_budget],borderColor:'#3fb950',borderWidth:2,pointRadius:3},
+        {label:'Uniform DCA',data:[TRACKER.total_budget],borderColor:'#58a6ff',borderWidth:2,borderDash:[5,4],pointRadius:3},
+        {label:'Capital Invested',data:[0],borderColor:'#8b949e',borderWidth:1,borderDash:[2,3],pointRadius:0}
+      ]},options:opts});
+    return;
+  }
+  const uniW=TRACKER.total_budget/20;
+  let sBTC=0,uC=0,inv=0;
+  const labels=[TRACKER.start_date],sV=[TRACKER.total_budget],uV=[TRACKER.total_budget],iV=[0];
+  hist.forEach(h=>{
+    sBTC+=h.sats/1e8; uC+=uniW/h.price; inv+=h.amount;
+    labels.push(h.date);
+    sV.push(+(sBTC*price+TRACKER.remaining).toFixed(0));
+    uV.push(+(uC*price).toFixed(0));
+    iV.push(inv);
+  });
+  perfCh=new Chart(document.getElementById('perf-chart'),{type:'line',
+    data:{labels,datasets:[
+      {label:'Your Strategy',data:sV,borderColor:'#3fb950',borderWidth:2,pointRadius:3,fill:false},
+      {label:'Uniform DCA',data:uV,borderColor:'#58a6ff',borderWidth:2,borderDash:[5,4],pointRadius:3,fill:false},
+      {label:'Capital Invested',data:iV,borderColor:'#8b949e',borderWidth:1,borderDash:[2,3],pointRadius:0,fill:false}
+    ]},options:opts});
+}
+
+async function runBacktest() {
+  await new Promise(r=>setTimeout(r,200));
+  const data=allPrices,rs=riskSeries,WINDOW=140,BUDGET=10000,results=[];
+  const rMap={};
+  rs.forEach(d=>{if(d.risk!==null)rMap[d.x]=d.risk;});
+  for(let i=365;i<data.length-WINDOW;i+=7){
+    const w=data.slice(i,i+WINDOW+1);
+    if(w.length<WINDOW)break;
+    let rem=BUDGET,sBTC=0,uC=0;
+    const uW=BUDGET/20,slot=BUDGET/15;
+    for(let wk=0;wk<20;wk++){
+      const di=i+wk*7;if(di>=data.length)break;
+      const dp=data[di],risk=rMap[dp.x]??0.5;
+      uC+=uW/dp.y;
+      if(risk<0.30&&rem>0){
+        const sl=risk<0.10?4:risk<0.20?3:risk<0.30?2:1;
+        let amt=Math.min(Math.round(sl*slot/50)*50,rem,rem*0.33);
+        if(amt>=50){sBTC+=amt/dp.y;rem-=amt;}
+      }
+    }
+    const ep=w[w.length-1].y;
+    const sF=sBTC*ep+rem,uF=uC*ep;
+    results.push({yr:new Date(data[i].x*1000).getFullYear(),sR:(sF/BUDGET-1)*100,uR:(uF/BUDGET-1)*100,out:((sF/BUDGET-1)*100)-((uF/BUDGET-1)*100)});
+  }
+  if(!results.length){document.getElementById('bt-loading').textContent='Not enough data.';return;}
+  const wr=results.filter(r=>r.out>0).length/results.length*100;
+  const mO=median(results.map(r=>r.out));
+  const p10=pct(results.map(r=>r.sR),10),p90=pct(results.map(r=>r.sR),90);
+  document.getElementById('bt-loading').style.display='none';
+  document.getElementById('bt-results').style.display='block';
+  document.getElementById('bt-stats').innerHTML=`
+    <div class="bt-stat"><div class="bt-val">${results.length.toLocaleString()}</div><div class="bt-lbl">Windows Tested</div></div>
+    <div class="bt-stat"><div class="bt-val" style="color:var(--green)">${wr.toFixed(0)}%</div><div class="bt-lbl">Beat Uniform DCA</div></div>
+    <div class="bt-stat"><div class="bt-val" style="color:${mO>=0?'var(--green)':'var(--red)'}">${mO>=0?'+':''}${mO.toFixed(1)}%</div><div class="bt-lbl">Median Outperformance</div></div>
+    <div class="bt-stat"><div class="bt-val">${p10.toFixed(0)}% / ${p90.toFixed(0)}%</div><div class="bt-lbl">10th / 90th Percentile</div></div>
+  `;
+  const step=Math.max(1,Math.floor(results.length/120));
+  const sc=results.filter((_,i)=>i%step===0);
+  new Chart(document.getElementById('bt-chart'),{type:'line',
+    data:{labels:sc.map(r=>r.yr),datasets:[
+      {label:'Risk Strategy Return',data:sc.map(r=>r.sR),borderColor:'#3fb950',borderWidth:1.5,pointRadius:0,fill:false},
+      {label:'Uniform DCA Return',data:sc.map(r=>r.uR),borderColor:'#58a6ff',borderWidth:1.5,pointRadius:0,borderDash:[4,3],fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#8b949e',font:{size:9},maxTicksLimit:10},grid:{color:'rgba(48,54,61,.3)'}},
+              y:{ticks:{color:'#8b949e',callback:v=>v.toFixed(0)+'%'},grid:{color:'rgba(48,54,61,.3)'}}}}
+  });
+}
+
+function median(arr){const s=[...arr].sort((a,b)=>a-b),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+function pct(arr,p){const s=[...arr].sort((a,b)=>a-b);return s[Math.floor(p/100*(s.length-1))];}
+
+function renderHistory(price) {
+  const hist=TRACKER.history||[];
+  if(hist.length===0){document.getElementById('hist-empty').style.display='block';document.getElementById('hist-table').style.display='none';return;}
+  document.getElementById('hist-empty').style.display='none';
+  document.getElementById('hist-table').style.display='table';
+  const tb=document.getElementById('hist-body');tb.innerHTML='';
+  hist.forEach(h=>{
+    const val=(h.sats/1e8)*price,pnl=val-h.amount,pp=pnl/h.amount*100;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${new Date(h.date).toLocaleDateString('en-AU')}</td><td>$${h.price.toLocaleString('en-AU',{maximumFractionDigits:0})}</td><td>$${h.amount.toLocaleString()}</td><td>${(h.sats||0).toLocaleString()}</td><td>${h.risk?(h.risk*100).toFixed(0)+'%':'—'}</td><td>${h.fg||'—'}</td><td>$${val.toLocaleString('en-AU',{maximumFractionDigits:0})}</td><td class="${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}$${Math.abs(pnl).toLocaleString('en-AU',{maximumFractionDigits:0})} (${pp>=0?'+':''}${pp.toFixed(1)}%)</td>`;
+    tb.appendChild(tr);
+  });
+  const sells=TRACKER.sells||[];
+  if(sells.length>0){
+    document.getElementById('sell-hist-card').style.display='block';
+    const sb=document.getElementById('sell-hist-body');sb.innerHTML='';
+    sells.forEach(s=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${new Date(s.date).toLocaleDateString('en-AU')}</td><td>$${s.price.toLocaleString('en-AU',{maximumFractionDigits:0})}</td><td>${(s.sats||0).toLocaleString()}</td><td>$${s.proceeds.toLocaleString('en-AU',{maximumFractionDigits:0})}</td><td>${s.risk?(s.risk*100).toFixed(0)+'%':'—'}</td><td>${s.cgtEligible?'✅ Eligible (50% off)':'⚠️ Not yet'}</td>`;
+      sb.appendChild(tr);
+    });
+  }
+}
+
+function updateReserve() {
+  const r=TRACKER.cycle2_reserve||0;
+  if(r>0||TRACKER.high_risk_streak>=8){
+    document.getElementById('reserve-banner').style.display='block';
+    document.getElementById('reserve-amt').textContent='$'+r.toLocaleString();
+  }
+}
+
+async function writeTracker(newT, isSell=false) {
+  const okId=isSell?'sell-ok':'buy-ok';
+  const btnId=isSell?'sell-btn':'buy-btn';
+  saveTracker(newT);
+  document.getElementById(okId).style.display='inline';
+  document.getElementById(btnId).disabled=true;
+  setTimeout(()=>location.reload(),1200);
+}
+
+function openAddFunds() {
+  document.getElementById('af-current').textContent='$'+TRACKER.total_budget.toLocaleString();
+  document.getElementById('af-remaining').textContent='$'+TRACKER.remaining.toLocaleString();
+  document.getElementById('add-funds-modal').style.display='flex';
+  document.getElementById('add-funds-input').focus();
+}
+function closeAddFunds(){document.getElementById('add-funds-modal').style.display='none';document.getElementById('add-funds-input').value='';}
+async function confirmAddFunds() {
+  const amt=parseFloat(document.getElementById('add-funds-input').value);
+  if(!amt||amt<=0){alert('Enter a valid amount.');return;}
+  const newT={...TRACKER,total_budget:TRACKER.total_budget+amt,remaining:TRACKER.remaining+amt};
+  closeAddFunds();
+  await writeTracker(newT,false);
+}
+
+function onBuyChk(cb){document.getElementById('buy-btn').disabled=!cb.checked;document.getElementById('buy-manual').style.display=cb.checked?'block':'none';}
+async function saveBuy() {
+  let savePrice=spotPrice||livePrice;
+  try{
+    const sr=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+    const sj=await sr.json();
+    if(sj.bitcoin&&sj.bitcoin.usd)savePrice=sj.bitcoin.usd;
+  }catch(_){}
+  const amount=parseFloat(document.getElementById('buy-amt-in').value)||pendingBuy.amount;
+  const inputSats=parseInt(document.getElementById('buy-sats-in').value);
+  const autoSats=Math.round((amount/livePrice)*1e8);
+  const sats=(inputSats&&inputSats!==autoSats)?inputSats:Math.round((amount/savePrice)*1e8);
+  const entry={date:new Date().toISOString().split('T')[0],price:Math.round(savePrice),amount,sats,risk:parseFloat(liveRisk.toFixed(4)),fg:fgSeries?parseInt(fgSeries[0].value):null};
+  await writeTracker({...TRACKER,deployed:TRACKER.deployed+amount,remaining:Math.max(0,TRACKER.remaining-amount),history:[...(TRACKER.history||[]),entry],high_risk_streak:0,last_buy_date:entry.date},false);
+}
+
+function onSellChk(cb){document.getElementById('sell-btn').disabled=!cb.checked;document.getElementById('sell-manual').style.display=cb.checked?'block':'none';}
+async function saveSell() {
+  const sats=parseInt(document.getElementById('sell-sats-in').value)||pendingSell.sellSats;
+  const sp=parseFloat(document.getElementById('sell-price-in').value)||Math.round(livePrice);
+  const entry={date:new Date().toISOString().split('T')[0],price:Math.round(sp),sats,proceeds:Math.round((sats/1e8)*sp),risk:parseFloat(liveRisk.toFixed(4)),cgtEligible:pendingSell?pendingSell.cgtCls==='cgt-ok':false};
+  await writeTracker({...TRACKER,sells:[...(TRACKER.sells||[]),entry]},true);
+}
+
+function onConToggle(cb) {
+  conservativeMode=cb.checked;
+  saveTracker({...TRACKER,conservative_mode:conservativeMode});
+  document.getElementById('z30-40').style.opacity=cb.checked?'0.35':'1';
+  if(livePrice&&liveRisk!==null&&fgSeries){
+    const prices=allPrices.map(d=>d.y);
+    const ma30=prices.slice(-30).reduce((a,b)=>a+b,0)/30;
+    pendingBuy=calcDeployment(liveRisk,parseInt(fgSeries[0].value),livePrice,ma30,liveRegime,vol30d,halvingInfo,mvrvProxy);
+    updateBanner(liveRisk,parseInt(fgSeries[0].value),livePrice);
+    renderBuyCard(pendingBuy,spotPrice||livePrice);
+    renderZoneBars();
+  }
+}
+</script>
+
+<!-- Add Funds Modal -->
+<div id="add-funds-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 32px;width:min(340px,90vw);box-shadow:0 8px 32px rgba(0,0,0,.4)">
+    <div style="font-size:15px;font-weight:700;margin-bottom:6px">Add Funds</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:18px">Current budget: <strong style="color:var(--text)" id="af-current">—</strong> · Remaining: <strong style="color:var(--text)" id="af-remaining">—</strong></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Amount to add (AUD $)</div>
+    <input id="add-funds-input" type="number" min="50" step="50" placeholder="e.g. 5000"
+      style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:15px;margin-bottom:8px"
+      onkeydown="if(event.key==='Enter')confirmAddFunds()">
+    <div id="af-preview" style="font-size:11px;color:var(--muted);min-height:16px;margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-muted" onclick="closeAddFunds()">Cancel</button>
+      <button class="btn btn-green" onclick="confirmAddFunds()">Confirm &amp; Save</button>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('add-funds-input').addEventListener('input',function(){
+  const v=parseFloat(this.value);
+  const prev=document.getElementById('af-preview');
+  if(v>0){prev.textContent=`New budget: $${(TRACKER.total_budget+v).toLocaleString()} · New remaining: $${(TRACKER.remaining+v).toLocaleString()}`;}
+  else{prev.textContent='';}
+});
+document.getElementById('add-funds-modal').addEventListener('click',function(e){if(e.target===this)closeAddFunds();});
 </script>
 </body>
 </html>

@@ -1,13 +1,13 @@
 {
-  "name": "Bitcoin DCA Risk Meter",
+  "name": "BTC DCA Advisor",
   "short_name": "BTC DCA",
-  "description": "Weekly Bitcoin risk signal to guide DCA buying decisions",
+  "description": "Risk-triggered Bitcoin DCA advisor with Kelly sizing, regime detection and CGT optimiser",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#13171c",
-  "theme_color": "#13171c",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
   "categories": ["finance"],
   "icons": [
     {
