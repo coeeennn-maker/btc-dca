@@ -1,4 +1,4 @@
-const CACHE = 'btc-dca-v1';
+const CACHE = 'btc-dca-v3';
 const SHELL = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
