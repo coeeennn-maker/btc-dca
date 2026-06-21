@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#13171c" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BTC DCA" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+
+  <title>BTC DCA Risk Meter</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #13171c;
+      color: #e0e0e0;
+      font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
+      padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 24px);
+      min-height: 100dvh;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: clamp(16px, 4vw, 22px);
+      font-weight: 600;
+      color: #f5c842;
+      margin: 16px 0 4px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: clamp(10px, 2.5vw, 13px);
+      color: #666;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    #status-bar {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      background: #1e2530;
+      border: 1px solid #2c3340;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      font-size: clamp(12px, 3vw, 15px);
+    }
+
+    .stat-label { color: #888; font-size: clamp(10px, 2.5vw, 12px); margin-bottom: 2px; }
+    .stat-value { font-size: clamp(15px, 4vw, 18px); font-weight: 700; }
+
+    #loading {
+      text-align: center;
+      padding: 40px 20px;
+      font-size: 15px;
+      color: #888;
+    }
+
+    #chart {
+      width: 100%;
+      height: clamp(260px, 55vw, 520px);
+    }
+
+    .risk-bar-wrap {
+      margin: 12px 0;
+    }
+
+    .risk-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: clamp(9px, 2.2vw, 11px);
+      color: #666;
+      margin-bottom: 3px;
+    }
+
+    .risk-bar-track {
+      width: 100%;
+      height: 10px;
+      border-radius: 5px;
+      background: linear-gradient(to right,
+        #00c853 0%, #69f0ae 25%, #00bfa5 45%,
+        #ffab00 55%, #ff6d00 70%, #d50000 100%
+      );
+      position: relative;
+    }
+
+    .risk-bar-needle {
+      position: absolute;
+      top: -5px;
+      width: 4px;
+      height: 20px;
+      background: white;
+      border-radius: 2px;
+      transform: translateX(-50%);
+      transition: left 0.5s ease;
+      box-shadow: 0 0 4px rgba(0,0,0,0.6);
+    }
+
+    .table-wrap {
+      margin: 20px auto 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 8px;
+    }
+
+    .table-wrap h2 {
+      text-align: center;
+      font-size: clamp(13px, 3vw, 15px);
+      color: #aaa;
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: clamp(11px, 2.8vw, 13px);
+      min-width: 300px;
+    }
+
+    th {
+      background: #1e2530;
+      color: #aaa;
+      padding: 8px 10px;
+      text-align: center;
+      border: 1px solid #2c3340;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 6px 10px;
+      border: 1px solid #252b35;
+      text-align: center;
+    }
+
+    tr:nth-child(even) td { background: #181d24; }
+
+    .signal-strong-buy  { color: #00e676; font-weight: 700; }
+    .signal-buy         { color: #69f0ae; font-weight: 600; }
+    .signal-neutral     { color: #ffd740; }
+    .signal-sell        { color: #ff6e40; font-weight: 600; }
+    .signal-strong-sell { color: #ff1744; font-weight: 700; }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      padding-bottom: 8px;
+      font-size: clamp(9px, 2.2vw, 11px);
+      color: #444;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 480px) {
+      #status-bar { gap: 10px 16px; }
+      .table-wrap { border-radius: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>₿ Bitcoin DCA Risk Meter</h1>
+<p class="subtitle">BitcoinRaven V2 model · Risk 0–0.5 = buy · 0.5–0.6 = hold · above 0.6 = distribute</p>
+
+<div id="status-bar">
+  <div id="stat-loading" style="color:#888;">Loading data…</div>
+</div>
+
+<div class="risk-bar-wrap" id="risk-bar-wrap" style="display:none;">
+  <div class="risk-bar-label"><span>0.0 Max Buy</span><span>0.5 Neutral</span><span>1.0 Max Sell</span></div>
+  <div class="risk-bar-track"><div class="risk-bar-needle" id="risk-needle" style="left:0%"></div></div>
+</div>
+
+<div id="loading">Fetching Bitcoin data…</div>
+<div id="chart"></div>
+
+<div class="table-wrap" id="table-wrap" style="display:none;">
+  <h2>Price targets by risk level</h2>
+  <div id="price-table"></div>
+</div>
+
+<div class="footer">
+  Data: Blockchain.info · Formula: BitcoinRaven Risk Metric V2<br>
+  Risk 0–0.5 = accumulate · 0.5–0.6 = hold · 0.6–1.0 = distribute · <em>Not financial advice.</em>
+</div>
+
+<script>
+  const DIMINISHING_FACTOR = 0.395;
+  const MA_DAYS = 365;
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
+  async function fetchData() {
+    const url = 'https://api.blockchain.info/charts/market-price?timespan=all&format=json&cors=true&sampled=false';
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Blockchain.info error ${r.status}`);
+    const json = await r.json();
+    if (!json.values?.length) throw new Error('No data returned');
+    return json.values.filter(d => d.y > 0).map(d => [d.x * 1000, d.y]);
+  }
+
+  function computeRisk(rawPrices) {
+    const n = rawPrices.length;
+    const dates  = rawPrices.map(p => new Date(p[0]).toISOString().slice(0, 10));
+    const prices = rawPrices.map(p => p[1]);
+
+    const ma = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const start = Math.max(0, i - MA_DAYS + 1);
+      let sum = 0;
+      for (let j = start; j <= i; j++) sum += prices[j];
+      ma[i] = sum / (i - start + 1);
+    }
+
+    const preavg = new Array(n);
+    for (let i = 0; i < n; i++) {
+      if (i === 0 || ma[i] <= 0 || prices[i] <= 0) { preavg[i] = null; continue; }
+      preavg[i] = (Math.log(prices[i]) - Math.log(ma[i])) * Math.pow(i, DIMINISHING_FACTOR);
+    }
+
+    let cumMin = Infinity, cumMax = -Infinity;
+    const risk = new Array(n);
+    for (let i = 0; i < n; i++) {
+      if (preavg[i] === null) { risk[i] = null; continue; }
+      if (preavg[i] < cumMin) cumMin = preavg[i];
+      if (preavg[i] > cumMax) cumMax = preavg[i];
+      const r = (preavg[i] - cumMin) / (cumMax - cumMin);
+      risk[i] = isNaN(r) ? 0 : r;
+    }
+
+    return { dates, prices, ma, risk, cumMin, cumMax, lastIndex: n - 1, lastMA: ma[n - 1] };
+  }
+
+  function priceAtRisk(r, cumMin, cumMax, lastIndex, lastMA) {
+    const preavgTarget = r * (cumMax - cumMin) + cumMin;
+    return Math.round(Math.exp(preavgTarget / Math.pow(lastIndex, DIMINISHING_FACTOR) + Math.log(lastMA)));
+  }
+
+  function signalClass(r) {
+    if (r < 0.3) return 'signal-strong-buy';
+    if (r < 0.5) return 'signal-buy';
+    if (r < 0.6) return 'signal-neutral';
+    if (r < 0.75) return 'signal-sell';
+    return 'signal-strong-sell';
+  }
+
+  function signalText(r) {
+    if (r < 0.3) return 'Strong Buy';
+    if (r < 0.5) return 'Buy';
+    if (r < 0.6) return 'Neutral / Hold';
+    if (r < 0.75) return 'Sell';
+    return 'Strong Sell';
+  }
+
+  function riskColor(r) {
+    if (r < 0.3) return '#00e676';
+    if (r < 0.5) return '#69f0ae';
+    if (r < 0.6) return '#ffd740';
+    if (r < 0.75) return '#ff6e40';
+    return '#ff1744';
+  }
+
+  function buildShapes() {
+    const shapes = [];
+    const greenOpacities = [0.22, 0.26, 0.30, 0.35, 0.40];
+    for (let i = 5; i >= 1; i--) {
+      shapes.push({ type:'rect', xref:'paper', yref:'y2', x0:0, x1:1,
+        y0:(i-1)*0.1, y1:i*0.1, fillcolor:`rgba(0,200,83,${greenOpacities[i-1]})`,
+        line:{width:0}, layer:'below' });
+    }
+    const redOpacities = [0.25, 0.38, 0.52, 0.68];
+    for (let i = 6; i < 10; i++) {
+      shapes.push({ type:'rect', xref:'paper', yref:'y2', x0:0, x1:1,
+        y0:i*0.1, y1:(i+1)*0.1, fillcolor:`rgba(213,0,0,${redOpacities[i-6]})`,
+        line:{width:0}, layer:'below' });
+    }
+    return shapes;
+  }
+
+  async function main() {
+    try {
+      const raw = await fetchData();
+      document.getElementById('loading').textContent = 'Computing risk…';
+
+      const { dates, prices, risk, cumMin, cumMax, lastIndex, lastMA } = computeRisk(raw);
+
+      const currentPrice = prices[prices.length - 1];
+      const currentRisk  = risk[risk.length - 1];
+      const lastDate     = dates[dates.length - 1];
+
+      document.getElementById('stat-loading').remove();
+      document.getElementById('status-bar').innerHTML = `
+        <div><div class="stat-label">Updated</div><div class="stat-value" style="font-size:13px;">${lastDate}</div></div>
+        <div><div class="stat-label">BTC Price</div><div class="stat-value" style="color:#f5c842;">$${Math.round(currentPrice).toLocaleString()}</div></div>
+        <div><div class="stat-label">Risk Score</div><div class="stat-value" style="color:${riskColor(currentRisk)}">${currentRisk.toFixed(3)}</div></div>
+        <div><div class="stat-label">Signal</div><div class="stat-value ${signalClass(currentRisk)}" style="font-size:13px;">${signalText(currentRisk)}</div></div>
+      `;
+
+      document.getElementById('risk-bar-wrap').style.display = 'block';
+      document.getElementById('risk-needle').style.left = `${(currentRisk * 100).toFixed(1)}%`;
+      document.getElementById('loading').style.display = 'none';
+
+      const isMobile = window.innerWidth < 600;
+
+      Plotly.newPlot('chart', [
+        { x: dates, y: prices, name: 'BTC Price (USD)', type: 'scatter', mode: 'lines',
+          line: { color: '#f5c842', width: isMobile ? 1 : 1.5 }, yaxis: 'y' },
+        { x: dates, y: risk,   name: 'Risk Metric',    type: 'scatter', mode: 'lines',
+          line: { color: 'rgba(255,255,255,0.85)', width: 1 }, yaxis: 'y2' }
+      ], {
+        paper_bgcolor: '#13171c', plot_bgcolor: '#13171c',
+        font: { color: '#c0c0c0', size: isMobile ? 10 : 12 },
+        xaxis: { showgrid: false, type: 'date', color: '#666', linecolor: '#333' },
+        yaxis: { title: isMobile ? '' : 'Price (USD)', type: 'log', showgrid: false,
+          side: 'left', color: '#f5c842', tickfont: { color: '#f5c842', size: isMobile ? 9 : 11 } },
+        yaxis2: { title: isMobile ? '' : 'Risk', overlaying: 'y', side: 'right', range: [0,1],
+          showgrid: true, gridcolor: 'rgba(255,255,255,0.06)', tick0: 0, dtick: 0.1,
+          tickformat: '.1f', color: '#999', tickfont: { color: '#999', size: isMobile ? 9 : 11 } },
+        shapes: buildShapes(),
+        legend: { x: 0.01, y: 0.99, bgcolor: 'rgba(0,0,0,0.4)', bordercolor: '#333',
+          borderwidth: 1, font: { size: isMobile ? 10 : 12 } },
+        margin: { l: isMobile ? 44 : 60, r: isMobile ? 44 : 60, t: 12, b: isMobile ? 36 : 50 }
+      }, { responsive: true, displaylogo: false,
+        modeBarButtonsToRemove: ['select2d','lasso2d','toImage'] });
+
+      let html = `<table>
+        <thead><tr><th>Risk</th><th>Signal</th><th>Est. BTC price</th></tr></thead><tbody>`;
+      for (let i = 0; i <= 9; i++) {
+        const r = i / 10;
+        const price = priceAtRisk(r, cumMin, cumMax, lastIndex, lastMA);
+        const isCurrent = currentRisk >= r && currentRisk < r + 0.1;
+        const rowStyle = isCurrent ? 'background:#1e2a18;outline:1px solid #f5c842;' : '';
+        html += `<tr style="${rowStyle}">
+          <td>${r.toFixed(1)}${isCurrent ? ' ◀' : ''}</td>
+          <td class="${signalClass(r)}">${signalText(r)}</td>
+          <td>$${price.toLocaleString()}</td></tr>`;
+      }
+      html += '</tbody></table>';
+      document.getElementById('price-table').innerHTML = html;
+      document.getElementById('table-wrap').style.display = 'block';
+
+    } catch (err) {
+      document.getElementById('loading').innerHTML =
+        `<span style="color:#ff5252;">Error: ${err.message}</span><br>
+         <small style="color:#888;">Blockchain.info may be rate-limited — wait 60s and refresh.</small>`;
+    }
+  }
+
+  main();
+</script>
+</body>
+</html>
