@@ -1006,7 +1006,7 @@ function updatePacing(){
     } else if(pace<0.5&&daysLeft<120){
       warn.style.display='block';
       warn.style.background='rgba(227,179,65,.08)';warn.style.border='1px solid rgba(227,179,65,.3)';warn.style.color='var(--yellow)';
-      warn.innerHTML='💡 You're behind pace with '+daysLeft+' days left to the projected bottom. Remaining: $'+remaining.toLocaleString()+'.';
+      warn.innerHTML='💡 Behind pace — '+daysLeft+' days left to the projected bottom. Remaining: $'+remaining.toLocaleString()+'.';
     } else {
       warn.style.display='none';
     }
@@ -1219,6 +1219,10 @@ function processAll(){
   else{chartsNeedRender=true;}
   const now=new Date();
   document.getElementById('last-updated').textContent=now.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+  updatePacing();
+  const athPrice=allPrices&&allPrices.length>0?Math.max(...allPrices.slice(-1460).map(d=>d.y)):0;
+  updateSignalDrivers(liveRisk,fg,displayPrice,vol30d,halvingInfo,athPrice);
+  runScenario(50000,null);
 }
 
 function calcPredictedDeploy(){
@@ -1620,4 +1624,9 @@ function onConToggle(cb){
   if(livePrice&&liveRisk!==null&&fgSeries){
     const prices=allPrices.map(d=>d.y);const ma30=prices.slice(-30).reduce((a,b)=>a+b,0)/30;
     pendingBuy=calcDeployment(liveRisk,parseInt(fgSeries[0].value),livePrice,ma30,liveRegime,vol30d,halvingInfo,mvrvProxy);
-    updateBanner(liveRisk,parseInt(fgSeries[0].value),livePrice);renderBuyCard(pendingBuy,spotPrice||
+    updateBanner(liveRisk,parseInt(fgSeries[0].value),livePrice);renderBuyCard(pendingBuy,spotPrice||livePrice);renderZoneBars();
+  }
+}
+</script>
+</body>
+</html>
