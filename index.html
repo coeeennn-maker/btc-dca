@@ -161,11 +161,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 
 /* CHARTS */
 .chart-wrap{position:relative;height:220px}
-.fg-big{font-size:40px;font-weight:800;line-height:1}
-.fg-lbl{font-size:12px;color:var(--muted);margin-top:2px}
-.fg-track{height:7px;border-radius:4px;margin:12px 0 2px;background:linear-gradient(to right,#3fb950,#e3b341,#f85149);position:relative}
-.fg-dot{width:11px;height:11px;border-radius:50%;background:#fff;border:2px solid var(--bg);position:absolute;top:-2px;transition:left .3s}
+.fg-big{font-size:clamp(44px,12vw,60px);font-weight:800;line-height:1}
+.fg-lbl{font-size:13px;font-weight:600;color:var(--muted);margin-top:4px}
+.fg-gauge-wrap{padding:14px 0 4px}
+.fg-track{height:10px;border-radius:6px;margin:0 0 6px;background:linear-gradient(to right,#3fb950,#e3b341,#f85149);position:relative}
+.fg-dot{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--bg);position:absolute;top:-3px;transition:left .4s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .fg-track-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+.fg-zones{display:flex;gap:4px;margin:10px 0 4px;flex-wrap:wrap}
+.fg-zone-pill{flex:1;text-align:center;padding:5px 4px;border-radius:8px;font-size:10px;font-weight:700;min-width:52px}
 
 /* PORTFOLIO */
 table{width:100%;border-collapse:collapse;font-size:11px}
@@ -203,6 +206,13 @@ tr:last-child td{border-bottom:none}
 .tweet-footer{display:flex;align-items:center;justify-content:space-between}
 .tweet-date{font-size:11px;color:var(--muted)}
 .tweet-link{font-size:11px;color:var(--blue);text-decoration:none}
+
+/* QUANT METRICS GRID */
+.qm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.qm-cell{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.qm-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.qm-val{font-size:clamp(15px,4vw,20px);font-weight:800;line-height:1;color:var(--text)}
+.qm-sub{font-size:10px;color:var(--muted);margin-top:4px}
 
 /* DESKTOP */
 @media(min-width:700px){
@@ -389,20 +399,81 @@ tr:last-child td{border-bottom:none}
     <div class="chart-wrap"><canvas id="risk-chart"></canvas></div>
   </div>
   <div class="card">
-    <div class="card-title">Fear &amp; Greed Index</div>
-    <div style="display:flex;gap:16px;align-items:flex-start">
-      <div style="min-width:80px">
-        <div class="fg-big" id="fg-val">—</div>
-        <div class="fg-lbl" id="fg-lbl">Loading…</div>
-        <div class="fg-track"><div class="fg-dot" id="fg-dot" style="left:48%"></div></div>
-        <div class="fg-track-labels"><span>Fear</span><span>Greed</span></div>
-      </div>
-      <div style="flex:1;height:160px"><canvas id="fg-chart"></canvas></div>
+    <div class="card-title-row">
+      <div class="card-title" style="margin-bottom:0">Fear &amp; Greed Index</div>
+      <div id="fg-source" style="font-size:10px;color:var(--muted)">alternative.me</div>
     </div>
+    <div style="text-align:center;padding:8px 0 2px">
+      <div class="fg-big" id="fg-val">—</div>
+      <div class="fg-lbl" id="fg-lbl">Loading…</div>
+    </div>
+    <div class="fg-gauge-wrap">
+      <div class="fg-track"><div class="fg-dot" id="fg-dot" style="left:48%"></div></div>
+      <div class="fg-track-labels">
+        <span>Extreme Fear</span><span>Fear</span><span>Neutral</span><span>Greed</span><span>Extreme Greed</span>
+      </div>
+    </div>
+    <div class="fg-zones">
+      <div class="fg-zone-pill" style="background:rgba(63,185,80,.15);color:var(--green)">0–25 <br><span style="font-weight:400;font-size:9px">Ext. Fear<br>×1.15</span></div>
+      <div class="fg-zone-pill" style="background:rgba(63,185,80,.08);color:var(--green)">26–45 <br><span style="font-weight:400;font-size:9px">Fear<br>×1.08</span></div>
+      <div class="fg-zone-pill" style="background:rgba(139,148,158,.08);color:var(--muted)">46–55 <br><span style="font-weight:400;font-size:9px">Neutral<br>×1.00</span></div>
+      <div class="fg-zone-pill" style="background:rgba(248,81,73,.08);color:var(--red)">56–75 <br><span style="font-weight:400;font-size:9px">Greed<br>×0.92</span></div>
+      <div class="fg-zone-pill" style="background:rgba(248,81,73,.15);color:var(--red)">76–100 <br><span style="font-weight:400;font-size:9px">Ext. Greed<br>×0.85</span></div>
+    </div>
+    <div style="height:120px;margin-top:8px"><canvas id="fg-chart"></canvas></div>
   </div>
   <div class="card">
     <div class="card-title">Campaign Performance — Strategy vs Uniform DCA</div>
     <div class="chart-wrap"><canvas id="perf-chart"></canvas></div>
+  </div>
+
+  <!-- QUANT METRICS GRID -->
+  <div class="card">
+    <div class="card-title">Quant Metrics</div>
+    <div class="qm-grid">
+      <div class="qm-cell">
+        <div class="qm-label">Drawdown from ATH</div>
+        <div class="qm-val" id="qm-ath-dd">—</div>
+        <div class="qm-sub" id="qm-ath-sub">—</div>
+      </div>
+      <div class="qm-cell">
+        <div class="qm-label">200W SMA Distance</div>
+        <div class="qm-val" id="qm-sma200w">—</div>
+        <div class="qm-sub" id="qm-sma200w-sub">floor est.</div>
+      </div>
+      <div class="qm-cell">
+        <div class="qm-label">30d Volatility</div>
+        <div class="qm-val" id="qm-vol">—</div>
+        <div class="qm-sub" id="qm-vol-sub">annualised</div>
+      </div>
+      <div class="qm-cell">
+        <div class="qm-label">Sharpe Ratio</div>
+        <div class="qm-val" id="qm-sharpe">—</div>
+        <div class="qm-sub" id="qm-sharpe-sub">vs uniform DCA</div>
+      </div>
+      <div class="qm-cell">
+        <div class="qm-label">DCA Cost Basis</div>
+        <div class="qm-val" id="qm-cb">—</div>
+        <div class="qm-sub" id="qm-cb-sub">avg buy price</div>
+      </div>
+      <div class="qm-cell">
+        <div class="qm-label">Breakeven Price</div>
+        <div class="qm-val" id="qm-be">—</div>
+        <div class="qm-sub" id="qm-be-sub">to recover</div>
+      </div>
+    </div>
+    <!-- Pi Cycle indicator -->
+    <div id="pi-cycle-row" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px">
+      <div style="flex:1">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Pi Cycle (111DMA vs 350DMA×2)</div>
+        <div id="pi-status" style="font-size:14px;font-weight:700;color:var(--muted)">—</div>
+        <div id="pi-sub" style="font-size:11px;color:var(--muted);margin-top:2px">—</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Gap</div>
+        <div id="pi-gap" style="font-size:18px;font-weight:700;color:var(--muted)">—</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -785,7 +856,7 @@ function processAll(){
   renderZoneBars();
   renderHistory(displayPrice);
   updateReserve();
-  if(activeTab==='charts'){renderRiskChart(valid);renderFG(fgSeries);renderPerfChart(displayPrice);}
+  if(activeTab==='charts'){renderRiskChart(valid);if(fgSeries)renderFG(fgSeries);renderPerfChart(displayPrice);renderQuantMetrics(displayPrice);}
   else{chartsNeedRender=true;}
   const now=new Date();
   document.getElementById('last-updated').textContent=now.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
@@ -977,6 +1048,78 @@ function renderHistory(price){
 }
 
 function updateReserve(){const r=TRACKER.cycle2_reserve||0;if(r>0||TRACKER.high_risk_streak>=8){document.getElementById('reserve-banner').style.display='block';document.getElementById('reserve-amt').textContent='$'+r.toLocaleString();}}
+
+function renderQuantMetrics(currentPrice){
+  if(!allPrices||allPrices.length<50) return;
+  const prices=allPrices.map(d=>d.y);
+  const n=prices.length;
+
+  // ATH drawdown
+  const ath=Math.max(...prices.slice(-1460));// ~4yr
+  const dd=((currentPrice-ath)/ath*100);
+  const ddEl=document.getElementById('qm-ath-dd');
+  if(ddEl){ddEl.textContent=dd.toFixed(1)+'%';ddEl.style.color=dd<-50?'var(--green)':dd<-25?'var(--yellow)':'var(--muted)';
+  document.getElementById('qm-ath-sub').textContent='ATH $'+Math.round(ath/1000)+'k';}
+
+  // 200W SMA (approx 1400 daily candles)
+  const sma200w_n=Math.min(1400,n);
+  const sma200w=prices.slice(-sma200w_n).reduce((a,b)=>a+b,0)/sma200w_n;
+  const smaEl=document.getElementById('qm-sma200w');
+  if(smaEl){const dist=((currentPrice-sma200w)/sma200w*100);
+  smaEl.textContent=(dist>=0?'+':'')+dist.toFixed(0)+'%';
+  smaEl.style.color=dist<0?'var(--green)':dist<100?'var(--yellow)':'var(--red)';
+  document.getElementById('qm-sma200w-sub').textContent='~$'+Math.round(sma200w/1000)+'k floor';}
+
+  // 30d volatility (annualised)
+  const ret30=prices.slice(-31).map((_,i,a)=>i>0?Math.log(a[i]/a[i-1]):0).slice(1);
+  const mean30=ret30.reduce((a,b)=>a+b,0)/ret30.length;
+  const vol30=Math.sqrt(ret30.reduce((s,r)=>s+(r-mean30)**2,0)/ret30.length)*Math.sqrt(365)*100;
+  const volEl=document.getElementById('qm-vol');
+  if(volEl){volEl.textContent=vol30.toFixed(0)+'%';volEl.style.color=vol30>80?'var(--red)':vol30>50?'var(--yellow)':'var(--green)';}
+
+  // DCA cost basis & Sharpe
+  const hist=TRACKER.history||[];
+  if(hist.length>0){
+    const totalSats=hist.reduce((s,h)=>s+(h.sats||0),0);
+    const totalSpent=hist.reduce((s,h)=>s+h.amount,0);
+    const cb=totalSpent/(totalSats/1e8);
+    const cbEl=document.getElementById('qm-cb');
+    if(cbEl){cbEl.textContent='$'+Math.round(cb/1000)+'k';
+    cbEl.style.color=currentPrice>cb?'var(--green)':'var(--red)';
+    document.getElementById('qm-cb-sub').textContent=currentPrice>cb?'In profit ↑':'Underwater ↓';}
+
+    const beEl=document.getElementById('qm-be');
+    if(beEl){if(currentPrice<cb){beEl.textContent='$'+Math.round(cb/1000)+'k';beEl.style.color='var(--yellow)';document.getElementById('qm-be-sub').textContent=((cb-currentPrice)/currentPrice*100).toFixed(0)+'% above current';}
+    else{beEl.textContent='✓ In profit';beEl.style.color='var(--green)';document.getElementById('qm-be-sub').textContent='Cost basis $'+Math.round(cb/1000)+'k';}}
+
+    // Simple Sharpe: portfolio return / vol
+    const portVal=totalSats/1e8*currentPrice+TRACKER.remaining;
+    const portReturn=(portVal-TRACKER.total_budget)/TRACKER.total_budget;
+    const sharpe=(portReturn/((vol30/100)/Math.sqrt(365)));
+    const shEl=document.getElementById('qm-sharpe');
+    if(shEl){shEl.textContent=sharpe.toFixed(2);shEl.style.color=sharpe>1?'var(--green)':sharpe>0?'var(--yellow)':'var(--red)';
+    document.getElementById('qm-sharpe-sub').textContent=sharpe>1?'Good':'Needs time';}
+  } else {
+    ['qm-cb','qm-be','qm-sharpe'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='No buys yet';});
+  }
+
+  // Pi Cycle: 111DMA vs 350DMA*2
+  if(n>=350){
+    const ma111=prices.slice(-111).reduce((a,b)=>a+b,0)/111;
+    const ma350=prices.slice(-350).reduce((a,b)=>a+b,0)/350;
+    const target=ma350*2;
+    const gapPct=((ma111-target)/target*100);
+    const piEl=document.getElementById('pi-status');
+    const piGap=document.getElementById('pi-gap');
+    if(piEl){
+      if(gapPct>-5&&gapPct<5){piEl.textContent='⚠️ Near crossover — Cycle top signal';piEl.style.color='var(--red)';}
+      else if(gapPct<0){piEl.textContent='Accumulation — 111DMA below 350DMA×2';piEl.style.color='var(--green)';}
+      else{piEl.textContent='Bull run — 111DMA above 350DMA×2';piEl.style.color='var(--yellow)';}
+      document.getElementById('pi-sub').textContent='111DMA $'+Math.round(ma111/1000)+'k · 350DMA×2 $'+Math.round(target/1000)+'k';
+    }
+    if(piGap){piGap.textContent=(gapPct>=0?'+':'')+gapPct.toFixed(1)+'%';piGap.style.color=Math.abs(gapPct)<10?'var(--red)':gapPct<0?'var(--green)':'var(--yellow)';}
+  }
+}
 
 async function writeTracker(newT,isSell=false){
   const okId=isSell?'sell-ok':'buy-ok';const btnId=isSell?'sell-btn':'buy-btn';
