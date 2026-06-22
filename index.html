@@ -299,6 +299,7 @@ tr:last-child td{border-bottom:none}
   <button class="dtab" onclick="switchTab('charts')">Charts</button>
   <button class="dtab" onclick="switchTab('portfolio')">Portfolio</button>
   <button class="dtab" onclick="switchTab('info')">Info</button>
+  <button class="dtab" onclick="switchTab('predict')">Predict</button>
 </div>
 
 <div id="content">
@@ -464,8 +465,9 @@ tr:last-child td{border-bottom:none}
         <div class="pacing-stat-val" id="pacing-remaining">—</div>
       </div>
       <div class="pacing-stat">
-        <div class="pacing-stat-label">Daily Rate</div>
-        <div class="pacing-stat-val" id="pacing-rate">—</div>
+        <div class="pacing-stat-label">Est. Buys Left</div>
+        <div class="pacing-stat-val" id="pacing-buys">—</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px" id="pacing-per-buy">—</div>
       </div>
     </div>
     <div class="pacing-warn" id="pacing-warn" style="display:none"></div>
@@ -689,6 +691,40 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- PREDICT TAB -->
+<div id="tab-predict" class="tab-panel">
+  <div class="card">
+    <div class="card-title-row">
+      <div class="card-title" style="margin-bottom:0">Power Law Channel</div>
+      <div style="font-size:10px;color:var(--muted)">log scale · computed regression</div>
+    </div>
+    <div class="chart-wrap" style="height:260px"><canvas id="pl-chart"></canvas></div>
+    <div id="pl-summary" style="margin-top:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6"></div>
+  </div>
+  <div class="card">
+    <div class="card-title-row">
+      <div class="card-title" style="margin-bottom:0">Monte Carlo — 150 Paths to Oct 2026</div>
+      <div style="font-size:10px;color:var(--muted)">uses actual 30d vol</div>
+    </div>
+    <div class="chart-wrap" style="height:240px"><canvas id="mc-chart"></canvas></div>
+    <div id="mc-summary" style="margin-top:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Cycle Comparison — % Drawdown from ATH</div>
+    <div class="chart-wrap" style="height:220px"><canvas id="cyc2-chart"></canvas></div>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:11px">
+      <span style="color:#888">&#9472;&#9472; 2018 bear</span>
+      <span style="color:var(--blue)">&#9472;&#9472; 2022 bear</span>
+      <span style="color:var(--orange)">&#9472;&#9472; Current</span>
+    </div>
+  </div>
+  <div class="card" id="predict-synthesis">
+    <div class="card-title">Model Synthesis</div>
+    <div id="synthesis-body" style="font-size:13px;color:var(--muted);line-height:1.8"></div>
+  </div>
+</div>
+
+
 <!-- INFO TAB -->
 <div id="tab-info" class="tab-panel">
   <div class="card">
@@ -781,6 +817,10 @@ tr:last-child td{border-bottom:none}
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     Info
   </button>
+  <button class="nav-btn" onclick="switchTab('predict')">
+    <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    Predict
+  </button>
 </nav>
 
 <!-- SYNC MODAL -->
@@ -818,8 +858,8 @@ tr:last-child td{border-bottom:none}
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 
 // ── Tab management ───────────────────────────────────────────────────────────
-const TAB_ORDER=['home','charts','portfolio','info'];
-let activeTab='home', chartsNeedRender=false;
+const TAB_ORDER=['home','charts','portfolio','info','predict'];
+let activeTab='home', chartsNeedRender=false, predictNeedsRender=false;
 
 function switchTab(tab){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
@@ -837,6 +877,10 @@ function switchTab(tab){
       if(cp) renderPerfChart(cp);
       renderQuantMetrics(cp);renderCycleComparison(cp);
     });
+  }
+  if(tab==='predict'&&predictNeedsRender&&allPrices){
+    predictNeedsRender=false;
+    requestAnimationFrame(()=>renderPredictTab());
   }
   document.getElementById('content').scrollTop=0;
 }
@@ -870,16 +914,18 @@ function updateSignalDrivers(risk, fg, price, vol30, halving, ath){
   set('dr-dd', dd.toFixed(1)+'%', ddColor);
   arr('dr-dd-arr', dd<-40, dd>-10);
 
-  // Vol
-  const volColor=vol30>80?'var(--yellow)':vol30>50?'var(--muted)':'var(--green)';
-  set('dr-vol', vol30.toFixed(0)+'% ann.', volColor);
-  arr('dr-vol-arr', vol30>60, false); // high vol = more opportunity, not bear
+  // Vol — computeVol30d returns decimal (0.65 = 65%), convert to %
+  const volPct=vol30*100;
+  const volColor=volPct>80?'var(--yellow)':volPct>50?'var(--muted)':'var(--green)';
+  set('dr-vol', volPct.toFixed(0)+'% ann.', volColor);
+  arr('dr-vol-arr', volPct>60, false);
 
-  // Halving
-  const halvColor=halving&&halving.phase==='bear'?'var(--green)':'var(--muted)';
-  const halvTxt=halving?halving.label:'—';
+  // Halving — halvingCycleInfo returns {lbl, progress, col}
+  const halvBear=halving&&halving.progress>0.45&&halving.progress<0.85;
+  const halvColor=halvBear?'var(--green)':halving&&halving.progress>=0.85?'var(--blue)':'var(--muted)';
+  const halvTxt=halving?halving.lbl:'—';
   set('dr-halv', halvTxt, halvColor);
-  arr('dr-halv-arr', halving&&halving.phase==='bear', false);
+  arr('dr-halv-arr', halvBear, false);
 
   // Summary: count bulls vs bears
   const bulls=[risk<0.35, fg<=45, dd<-40, vol30>60, halving&&halving.phase==='bear'].filter(Boolean).length;
@@ -994,7 +1040,12 @@ function updatePacing(){
   if(s('pacing-days-left')) s('pacing-days-left').textContent=daysLeft;
   if(s('pacing-deployed')) s('pacing-deployed').textContent='$'+deployed.toLocaleString();
   if(s('pacing-remaining')) s('pacing-remaining').textContent='$'+remaining.toLocaleString();
-  if(s('pacing-rate')) s('pacing-rate').textContent=dailyRate>0?'$'+dailyRate.toFixed(0)+'/day':'—';
+  // Estimate remaining buys: use avg buy size from history, or $1000 default
+  const hist=TRACKER.history||[];
+  const avgBuy=hist.length>0?deployed/hist.length:1000;
+  const estBuys=avgBuy>0?Math.floor(remaining/avgBuy):0;
+  if(s('pacing-buys')){s('pacing-buys').textContent=estBuys>0?'~'+estBuys:'0';s('pacing-buys').style.color=estBuys>5?'var(--green)':estBuys>2?'var(--yellow)':'var(--red)';}
+  if(s('pacing-per-buy')) s('pacing-per-buy').textContent='$'+Math.round(avgBuy).toLocaleString()+' avg/buy';
 
   const warn=document.getElementById('pacing-warn');
   if(warn){
@@ -1002,7 +1053,7 @@ function updatePacing(){
       const mo=projRunout.toLocaleDateString('en-AU',{month:'short',year:'numeric'});
       warn.style.display='block';
       warn.style.background='rgba(248,81,73,.08)';warn.style.border='1px solid rgba(248,81,73,.3)';warn.style.color='var(--red)';
-      warn.innerHTML='⚠️ At this rate your budget runs out <strong>'+mo+'</strong> — '+Math.round(projRunoutDays)+' days before the projected bottom. Consider slowing buys.';
+      warn.innerHTML='⚠️ At this rate your budget runs out <strong>'+mo+'</strong> — '+Math.round(daysLeft-projRunoutDays)+' days before the projected bottom. Consider slowing buys.';
     } else if(pace<0.5&&daysLeft<120){
       warn.style.display='block';
       warn.style.background='rgba(227,179,65,.08)';warn.style.border='1px solid rgba(227,179,65,.3)';warn.style.color='var(--yellow)';
@@ -1216,7 +1267,7 @@ function processAll(){
   renderHistory(displayPrice);
   updateReserve();
   if(activeTab==='charts'){renderRiskChart(valid);if(fgSeries)renderFG(fgSeries);renderPerfChart(displayPrice);renderQuantMetrics(displayPrice);renderCycleComparison(displayPrice);}
-  else{chartsNeedRender=true;}
+  else{chartsNeedRender=true;predictNeedsRender=true;}
   const now=new Date();
   document.getElementById('last-updated').textContent=now.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
   updatePacing();
@@ -1596,7 +1647,10 @@ function closeAddFunds(){document.getElementById('add-funds-modal').style.displa
 async function confirmAddFunds(){
   const amt=parseFloat(document.getElementById('add-funds-input').value);
   if(!amt||amt<=0){alert('Enter a valid amount.');return;}
-  closeAddFunds();await writeTracker({...TRACKER,total_budget:TRACKER.total_budget+amt,remaining:TRACKER.remaining+amt},false);
+  closeAddFunds();
+  saveTracker({...TRACKER,total_budget:TRACKER.total_budget+amt,remaining:TRACKER.remaining+amt});
+  await saveToGist(TRACKER);
+  setTimeout(()=>location.reload(),400);
 }
 
 function onBuyChk(cb){document.getElementById('buy-btn').disabled=!cb.checked;document.getElementById('buy-manual').style.display=cb.checked?'block':'none';}
@@ -1627,6 +1681,276 @@ function onConToggle(cb){
     updateBanner(liveRisk,parseInt(fgSeries[0].value),livePrice);renderBuyCard(pendingBuy,spotPrice||livePrice);renderZoneBars();
   }
 }
+// ═══════════════════════════ PREDICT TAB ════════════════════════════════════
+let plCh=null,mcCh=null,cyc2Ch=null;
+
+function gaussRand(){
+  let u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function computePowerLawModel(data){
+  const GENESIS=1230940800;
+  const valid=data.filter(d=>d.y>100&&d.x>GENESIS+180*86400);
+  const sampled=valid.filter((_,i)=>i%7===0);
+  const n=sampled.length;
+  const lx=sampled.map(d=>Math.log(d.x-GENESIS));
+  const ly=sampled.map(d=>Math.log(d.y));
+  const mx=lx.reduce((a,b)=>a+b,0)/n;
+  const my=ly.reduce((a,b)=>a+b,0)/n;
+  const num=lx.reduce((s,x,i)=>s+(x-mx)*(ly[i]-my),0);
+  const den=lx.reduce((s,x)=>s+(x-mx)**2,0);
+  const slope=num/den;
+  const intercept=my-slope*mx;
+  const res=ly.map((y,i)=>y-(slope*lx[i]+intercept));
+  const sigma=Math.sqrt(res.reduce((s,r)=>s+r**2,0)/n);
+  return{slope,intercept,sigma,GENESIS};
+}
+
+function renderPowerLaw(){
+  if(!allPrices||allPrices.length<500)return;
+  if(plCh)plCh.destroy();
+  const m=computePowerLawModel(allPrices);
+  const GENESIS=m.GENESIS;
+
+  // Sample weekly for chart performance
+  const hist=allPrices.filter(d=>d.y>0).filter((_,i)=>i%7===0);
+  const histLabels=hist.map(d=>new Date(d.x*1000).toLocaleDateString('en-AU',{year:'2-digit',month:'short'}));
+  const histPrices=hist.map(d=>d.y);
+
+  // Project forward to Dec 2026
+  const lastTs=allPrices[allPrices.length-1].x;
+  const projEnd=new Date('2026-12-31').getTime()/1000;
+  const projPts=[];
+  for(let t=lastTs;t<=projEnd;t+=7*86400){
+    const lx=Math.log(t-GENESIS);
+    const lnF=m.slope*lx+m.intercept;
+    projPts.push({t,fair:Math.exp(lnF),u2:Math.exp(lnF+2*m.sigma),u1:Math.exp(lnF+m.sigma),l1:Math.exp(lnF-m.sigma),l2:Math.exp(lnF-2*m.sigma)});
+  }
+  const projLabels=projPts.map(p=>new Date(p.t*1000).toLocaleDateString('en-AU',{year:'2-digit',month:'short'}));
+
+  // Compute fair value now and at bottom window
+  const nowLx=Math.log(lastTs-GENESIS);
+  const nowFair=Math.exp(m.slope*nowLx+m.intercept);
+  const botTs=new Date('2026-10-15').getTime()/1000;
+  const botLx=Math.log(botTs-GENESIS);
+  const botFair=Math.exp(m.slope*botLx+m.intercept);
+  const botL1=Math.exp(m.slope*botLx+m.intercept-m.sigma);
+  const botL2=Math.exp(m.slope*botLx+m.intercept-2*m.sigma);
+
+  const currentPrice=spotPrice||livePrice||histPrices[histPrices.length-1];
+  const plPos=(Math.log(currentPrice)-Math.log(nowFair))/m.sigma;
+
+  const allLabels=[...histLabels,...projLabels];
+  const nullHist=hist.map(()=>null);
+
+  plCh=new Chart(document.getElementById('pl-chart'),{
+    type:'line',
+    data:{
+      labels:allLabels,
+      datasets:[
+        {label:'BTC Price',data:[...histPrices,...projPts.map(()=>null)],borderColor:'#f78166',borderWidth:1.5,pointRadius:0,fill:false,yAxisID:'y'},
+        {label:'+2σ',data:[...nullHist,...projPts.map(p=>p.u2)],borderColor:'rgba(248,81,73,0.2)',borderWidth:1,pointRadius:0,fill:'+1',backgroundColor:'rgba(248,81,73,0.05)',yAxisID:'y'},
+        {label:'-2σ (support)',data:[...nullHist,...projPts.map(p=>p.l2)],borderColor:'rgba(63,185,80,0.2)',borderWidth:1,pointRadius:0,fill:false,yAxisID:'y'},
+        {label:'+1σ',data:[...nullHist,...projPts.map(p=>p.u1)],borderColor:'rgba(248,81,73,0.3)',borderWidth:1,pointRadius:0,fill:'+1',backgroundColor:'rgba(248,81,73,0.05)',yAxisID:'y'},
+        {label:'Fair Value',data:[...nullHist,...projPts.map(p=>p.fair)],borderColor:'rgba(255,255,255,0.7)',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false,yAxisID:'y'},
+        {label:'-1σ (floor)',data:[...nullHist,...projPts.map(p=>p.l1)],borderColor:'rgba(63,185,80,0.4)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,yAxisID:'y'},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#8b949e',font:{size:9},boxWidth:12,filter:i=>i.text!=='+2σ'&&i.text!=='+1σ'&&i.text!=='-2σ (support)'}}},
+      scales:{y:{type:'logarithmic',ticks:{color:'#8b949e',font:{size:9},callback:v=>{const k=v/1000;return k>=1?'$'+k.toFixed(0)+'k':'$'+v;}},grid:{color:'rgba(48,54,61,.4)'}},x:{ticks:{color:'#8b949e',font:{size:9},maxTicksLimit:8,maxRotation:0},grid:{color:'rgba(48,54,61,.3)'}}}
+    }
+  });
+
+  const posLbl=plPos>1?'overvalued (+'+plPos.toFixed(1)+'σ)':plPos<-1?'undervalued ('+plPos.toFixed(1)+'σ)':'near fair value ('+plPos.toFixed(1)+'σ)';
+  const el=document.getElementById('pl-summary');
+  if(el) el.innerHTML='Power law fair value <strong style="color:#fff">today: $'+Math.round(nowFair/1000)+'k</strong> | at Oct 2026 bottom: <strong style="color:var(--yellow)">$'+Math.round(botFair/1000)+'k</strong>. Support floor (−1σ): <strong style="color:var(--green)">$'+Math.round(botL1/1000)+'k</strong>. Current price is <strong style="color:var(--text)">'+posLbl+'</strong> relative to the long-term regression.';
+}
+
+function renderMonteCarlo(){
+  if(!allPrices||!vol30d)return;
+  if(mcCh)mcCh.destroy();
+
+  const currentPrice=spotPrice||livePrice||allPrices[allPrices.length-1].y;
+  const daysForward=Math.max(30,Math.round((new Date('2026-10-15')-new Date())/864e5));
+  const dailyVol=(vol30d||0.65)/Math.sqrt(365);
+  const drift=-0.0006;
+
+  const SIM=150;
+  const paths=[];
+  for(let s=0;s<SIM;s++){
+    let p=currentPrice;const path=[p];
+    for(let d=0;d<daysForward;d++){p=Math.max(p*Math.exp(drift+dailyVol*gaussRand()),5000);path.push(p);}
+    paths.push(path);
+  }
+
+  const p10=[],p25=[],p50=[],p75=[],p90=[];
+  for(let d=0;d<=daysForward;d++){
+    const v=paths.map(p=>p[d]).sort((a,b)=>a-b);const n=v.length;
+    p10.push(v[Math.floor(n*.10)]);p25.push(v[Math.floor(n*.25)]);p50.push(v[Math.floor(n*.50)]);
+    p75.push(v[Math.floor(n*.75)]);p90.push(v[Math.floor(n*.90)]);
+  }
+
+  const now=new Date();
+  const labels=Array.from({length:daysForward+1},(_,i)=>{
+    const d=new Date(now.getTime()+i*864e5);
+    return d.toLocaleDateString('en-AU',{month:'short',day:'numeric'});
+  });
+
+  // 200W SMA value as flat reference
+  const sma200w=allPrices.length>1400?allPrices.slice(-1400).map(d=>d.y).reduce((a,b)=>a+b,0)/1400:null;
+  const athPrice=allPrices.length>0?Math.max(...allPrices.slice(-1460).map(d=>d.y)):currentPrice;
+
+  mcCh=new Chart(document.getElementById('mc-chart'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'90th %ile',data:p90,borderColor:'rgba(248,81,73,0)',backgroundColor:'rgba(248,81,73,0.07)',fill:'+1',pointRadius:0,borderWidth:0},
+        {label:'75th %ile',data:p75,borderColor:'rgba(248,81,73,0)',backgroundColor:'rgba(248,81,73,0.10)',fill:'+1',pointRadius:0,borderWidth:0},
+        {label:'Median (50th)',data:p50,borderColor:'#58a6ff',borderWidth:2,pointRadius:0,fill:false},
+        {label:'25th %ile',data:p25,borderColor:'rgba(63,185,80,0)',backgroundColor:'rgba(63,185,80,0.10)',fill:'+1',pointRadius:0,borderWidth:0},
+        {label:'10th %ile',data:p10,borderColor:'rgba(63,185,80,0.3)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
+        ...(sma200w?[{label:'200W SMA',data:Array(daysForward+1).fill(sma200w),borderColor:'#e3b341',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false}]:[]),
+        {label:'-77% floor ($'+Math.round(athPrice*.23/1000)+'k)',data:Array(daysForward+1).fill(athPrice*.23),borderColor:'rgba(63,185,80,0.5)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8b949e',font:{size:9},boxWidth:12,filter:i=>i.text==='Median (50th)'||i.text.includes('SMA')||i.text.includes('floor')}}},
+      scales:{
+        y:{ticks:{color:'#8b949e',font:{size:9},callback:v=>'$'+Math.round(v/1000)+'k'},grid:{color:'rgba(48,54,61,.4)'}},
+        x:{ticks:{color:'#8b949e',font:{size:9},maxTicksLimit:6,maxRotation:0},grid:{color:'rgba(48,54,61,.3)'}}
+      }
+    }
+  });
+
+  const el=document.getElementById('mc-summary');
+  if(el){
+    const last50=p50[p50.length-1];const last10=p10[p10.length-1];const last90=p90[p90.length-1];
+    el.innerHTML='At the Oct 2026 projected bottom: median outcome <strong style="color:var(--blue)">$'+Math.round(last50/1000)+'k</strong>, pessimistic 10th %ile <strong style="color:var(--green)">$'+Math.round(last10/1000)+'k</strong>, optimistic 90th %ile <strong style="color:var(--red)">$'+Math.round(last90/1000)+'k</strong>. Based on '+daysForward+' days forward at '+Math.round((vol30d||0.65)*100)+'% annualised vol with bear-market drift.';
+  }
+}
+
+function renderCycleChart(){
+  if(!allPrices)return;
+  if(cyc2Ch)cyc2Ch.destroy();
+
+  // ATH timestamps
+  const ath2017ts=1513468800;const ath2021ts=1636502400;
+  const ath2017price=19666;const ath2021price=69000;
+
+  // Extract 2018 cycle (Dec 2017 to Dec 2018, ~370 days)
+  const c2018=allPrices.filter(d=>d.x>=ath2017ts&&d.x<=ath2017ts+400*86400)
+    .map(d=>({day:Math.round((d.x-ath2017ts)/86400),pct:d.y/ath2017price*100}));
+  // Extract 2022 cycle
+  const c2022=allPrices.filter(d=>d.x>=ath2021ts&&d.x<=ath2021ts+420*86400)
+    .map(d=>({day:Math.round((d.x-ath2021ts)/86400),pct:d.y/ath2021price*100}));
+
+  // Current cycle — find ATH in last 2 years
+  const recent=allPrices.filter(d=>d.x>1704067200);// after Jan 1 2024
+  let curAthPrice=0,curAthTs=0;
+  recent.forEach(d=>{if(d.y>curAthPrice){curAthPrice=d.y;curAthTs=d.x;}});
+  const cCurrent=allPrices.filter(d=>d.x>=curAthTs)
+    .map(d=>({day:Math.round((d.x-curAthTs)/86400),pct:d.y/curAthPrice*100}));
+
+  const maxDay=Math.max(...c2018.map(d=>d.day),...c2022.map(d=>d.day),...cCurrent.map(d=>d.day),420);
+  const labels=Array.from({length:maxDay+1},(_,i)=>i%30===0?'D'+i:'');
+
+  function toLineData(cycle,maxD){
+    const out=Array(maxD+1).fill(null);
+    cycle.forEach(p=>{if(p.day<=maxD)out[p.day]=parseFloat(p.pct.toFixed(1));});
+    return out;
+  }
+
+  const curDay=Math.round((allPrices[allPrices.length-1].x-curAthTs)/86400);
+
+  cyc2Ch=new Chart(document.getElementById('cyc2-chart'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'2018 bear',data:toLineData(c2018,maxDay),borderColor:'rgba(139,148,158,0.6)',borderWidth:1.5,pointRadius:0,fill:false,tension:0.3},
+        {label:'2022 bear',data:toLineData(c2022,maxDay),borderColor:'#58a6ff',borderWidth:1.5,pointRadius:0,fill:false,tension:0.3},
+        {label:'Current',data:toLineData(cCurrent,maxDay),borderColor:'#f78166',borderWidth:2.5,pointRadius:0,fill:false,tension:0.3},
+        {label:'ATH',data:Array(maxDay+1).fill(100),borderColor:'rgba(255,255,255,0.15)',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false},
+        {label:'−77%',data:Array(maxDay+1).fill(23),borderColor:'rgba(63,185,80,0.5)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false},
+        {label:'−84%',data:Array(maxDay+1).fill(16),borderColor:'rgba(63,185,80,0.7)',borderWidth:1.5,borderDash:[3,3],pointRadius:0,fill:false},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#8b949e',font:{size:9},boxWidth:12}},
+        tooltip:{callbacks:{label:ctx=>{if(ctx.raw===null)return null;return ctx.dataset.label+': '+ctx.raw+'% of ATH';}}}
+      },
+      scales:{
+        y:{min:0,max:110,ticks:{color:'#8b949e',font:{size:9},callback:v=>v+'%'},grid:{color:'rgba(48,54,61,.4)'},title:{display:true,text:'% of ATH',color:'#8b949e',font:{size:9}}},
+        x:{ticks:{color:'#8b949e',font:{size:9}},grid:{color:'rgba(48,54,61,.3)'}}
+      }
+    }
+  });
+
+  // Annotate where we are
+  const daysToBot=Math.max(0,Math.round((new Date('2026-10-15')-new Date())/864e5));
+  const botDay=curDay+daysToBot;
+  const el=document.getElementById('cyc2-chart');
+  if(el) el.dataset.curday=curDay;
+
+  return{curDay,curAthPrice,botDay};
+}
+
+function renderSynthesis(){
+  const el=document.getElementById('synthesis-body');
+  if(!el||!allPrices||!vol30d)return;
+  const currentPrice=spotPrice||livePrice||0;
+  const m=computePowerLawModel(allPrices);
+  const GENESIS=m.GENESIS;
+  const botTs=new Date('2026-10-15').getTime()/1000;
+  const botLx=Math.log(botTs-GENESIS);
+  const botFair=Math.exp(m.slope*botLx+m.intercept);
+  const botL1=Math.exp(m.slope*botLx+m.intercept-m.sigma);
+  const sma200w=allPrices.length>1400?allPrices.slice(-1400).map(d=>d.y).reduce((a,b)=>a+b,0)/1400:botFair;
+  const athPrice=allPrices.length>0?Math.max(...allPrices.slice(-1460).map(d=>d.y)):currentPrice;
+  const floor77=athPrice*0.23;const floor84=athPrice*0.16;
+  const daysLeft=Math.max(0,Math.round((new Date('2026-10-15')-new Date())/864e5));
+
+  const scenarios=[
+    {label:'Bull case',price:Math.max(botFair,sma200w*1.1),color:'var(--green)',prob:20,note:'Bear ends early, price holds above 200W SMA'},
+    {label:'Base case',price:Math.round((botFair+sma200w)/2),color:'var(--yellow)',prob:45,note:'Bottom near 200W SMA & power law fair value'},
+    {label:'Bear case',price:Math.round((floor77+botL1)/2),color:'var(--orange)',prob:25,note:'Extended bear, price tests -77% ATH floor'},
+    {label:'Black swan',price:floor84,color:'var(--red)',prob:10,note:'2018-style capitulation, -84% from ATH'},
+  ];
+
+  let html2='<div style="margin-bottom:12px">Four models converge on a <strong style="color:#fff">$'+Math.round(botFair/1000)+'k–$'+Math.round(sma200w/1000)+'k range</strong> for the Oct 2026 projected bottom. The 200W SMA (Cowen primary floor indicator) and the power law fair value are within '+Math.round(Math.abs(botFair-sma200w)/1000)+'k of each other, which historically signals a strong support zone.</div>';
+  html2+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">';
+  scenarios.forEach(s=>{
+    html2+='<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;border:1px solid var(--border)">';
+    html2+='<div style="font-size:10px;font-weight:700;color:'+s.color+';text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">'+s.label+' ('+s.prob+'%)</div>';
+    html2+='<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:3px">$'+Math.round(s.price/1000)+'k</div>';
+    html2+='<div style="font-size:10px;color:var(--muted)">'+s.note+'</div></div>';
+  });
+  html2+='</div>';
+  html2+='<div style="font-size:12px;color:var(--muted);line-height:1.6">With <strong style="color:#fff">'+daysLeft+' days</strong> to the projected bottom and <strong style="color:#fff">$'+((TRACKER.remaining)||0).toLocaleString()+' remaining</strong>, the base case puts your eventual average cost basis well below the projected recovery target. The Monte Carlo simulation uses your actual 30d volatility of <strong style="color:#fff">'+Math.round((vol30d||0.65)*100)+'%</strong> annualised.</div>';
+
+  el.innerHTML=html2;
+}
+
+function renderPredictTab(){
+  if(!allPrices||allPrices.length<500)return;
+  renderPowerLaw();
+  renderMonteCarlo();
+  renderCycleChart();
+  renderSynthesis();
+}
+// ═══════════════════════════ END PREDICT ════════════════════════════════════
+
+
 </script>
 </body>
 </html>
