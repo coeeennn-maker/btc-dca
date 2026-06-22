@@ -641,7 +641,9 @@ function switchTab(tab){
       const valid=riskSeries.filter(d=>d.risk!==null);
       renderRiskChart(valid);
       if(fgSeries) renderFG(fgSeries);
-      if(spotPrice||livePrice) renderPerfChart(spotPrice||livePrice);
+      const cp=spotPrice||livePrice;
+      if(cp) renderPerfChart(cp);
+      renderQuantMetrics(cp);
     });
   }
   document.getElementById('content').scrollTop=0;
@@ -1045,8 +1047,8 @@ function renderHistory(price){
 function updateReserve(){const r=TRACKER.cycle2_reserve||0;if(r>0||TRACKER.high_risk_streak>=8){document.getElementById('reserve-banner').style.display='block';document.getElementById('reserve-amt').textContent='$'+r.toLocaleString();}}
 
 function renderQuantMetrics(currentPrice){
-  if(!allPrices||allPrices.length<50) return;
-  const prices=allPrices.map(d=>d.y);
+  if(!allPrices||allPrices.length<50||!currentPrice) return;
+  const prices=allPrices.map(d=>d.y).filter(p=>p>0);
   const n=prices.length;
 
   // ATH drawdown
