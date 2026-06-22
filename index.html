@@ -416,7 +416,7 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
   <div class="card">
-    <div class="card-title">Campaign Performance — Strategy vs Uniform DCA</div>
+    <div class="card-title">Price Since Campaign Start · Your Buys &amp; Cost Basis</div>
     <div class="chart-wrap"><canvas id="perf-chart"></canvas></div>
   </div>
 
@@ -1026,12 +1026,82 @@ function renderFG(data){
 
 let perfCh=null;
 function renderPerfChart(price){
-  const hist=TRACKER.history||[];if(perfCh)perfCh.destroy();
-  const opts={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(48,54,61,.4)'}},y:{ticks:{color:'#8b949e',callback:v=>'$'+v.toLocaleString('en-AU',{maximumFractionDigits:0})},grid:{color:'rgba(48,54,61,.4)'}}}};
-  if(hist.length===0){perfCh=new Chart(document.getElementById('perf-chart'),{type:'line',data:{labels:['Start'],datasets:[{label:'Your Strategy',data:[TRACKER.total_budget],borderColor:'#3fb950',borderWidth:2,pointRadius:3},{label:'Uniform DCA',data:[TRACKER.total_budget],borderColor:'#58a6ff',borderWidth:2,borderDash:[5,4],pointRadius:3}]},options:opts});return;}
-  const uniW=TRACKER.total_budget/20;let sBTC=0,uC=0;const labels=[TRACKER.start_date],sV=[TRACKER.total_budget],uV=[TRACKER.total_budget];
-  hist.forEach(h=>{sBTC+=h.sats/1e8;uC+=uniW/h.price;labels.push(h.date);sV.push(+(sBTC*price+TRACKER.remaining).toFixed(0));uV.push(+(uC*price).toFixed(0));});
-  perfCh=new Chart(document.getElementById('perf-chart'),{type:'line',data:{labels,datasets:[{label:'Your Strategy',data:sV,borderColor:'#3fb950',borderWidth:2,pointRadius:3,fill:false},{label:'Uniform DCA',data:uV,borderColor:'#58a6ff',borderWidth:2,borderDash:[5,4],pointRadius:3,fill:false}]},options:opts});
+  const hist=TRACKER.history||[];
+  if(perfCh)perfCh.destroy();
+  if(!allPrices||allPrices.length<2) return;
+
+  // Show price from campaign start date (or 90 days if no start date)
+  const startMs=TRACKER.start_date?new Date(TRACKER.start_date).getTime():Date.now()-90*864e5;
+  const raw=allPrices.filter(d=>d.y>0&&d.x*1000>=startMs);
+  if(raw.length<2) return;
+
+  const labels=raw.map(d=>new Date(d.x*1000).toLocaleDateString('en-AU',{month:'short',day:'numeric'}));
+  const priceLine=raw.map(d=>d.y);
+
+  // Build buy scatter points mapped to raw index positions
+  const buyPoints=raw.map(()=>null);
+  hist.forEach(h=>{
+    const ts=new Date(h.date).getTime();
+    let best=-1,bestDiff=Infinity;
+    raw.forEach((d,i)=>{const diff=Math.abs(d.x*1000-ts);if(diff<bestDiff){bestDiff=diff;best=i;}});
+    if(best>=0) buyPoints[best]=raw[best].y;
+  });
+
+  // Cost basis line (flat)
+  const totalSats=hist.reduce((s,h)=>s+(h.sats||0),0);
+  const totalSpent=hist.reduce((s,h)=>s+h.amount,0);
+  const costBasis=totalSats>0?(totalSpent/(totalSats/1e8)):null;
+  const cbLine=costBasis?raw.map(()=>costBasis):null;
+
+  const datasets=[{
+    label:'BTC Price',
+    data:priceLine,
+    borderColor:'#f78166',
+    borderWidth:2,
+    pointRadius:0,
+    fill:false,
+    tension:0.1,
+    yAxisID:'y'
+  },{
+    label:'Your Buys',
+    data:buyPoints,
+    borderColor:'#3fb950',
+    backgroundColor:'#3fb950',
+    borderWidth:2,
+    pointRadius:buyPoints.map(v=>v?8:0),
+    pointHoverRadius:10,
+    showLine:false,
+    yAxisID:'y'
+  }];
+
+  if(cbLine) datasets.push({
+    label:'Avg Cost Basis $'+Math.round(costBasis/1000)+'k',
+    data:cbLine,
+    borderColor:'#e3b341',
+    borderWidth:1.5,
+    borderDash:[6,4],
+    pointRadius:0,
+    fill:false,
+    yAxisID:'y'
+  });
+
+  perfCh=new Chart(document.getElementById('perf-chart'),{
+    type:'line',
+    data:{labels,datasets},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:'#8b949e',font:{size:10},boxWidth:12,usePointStyle:true}},
+        tooltip:{callbacks:{label:ctx=>{if(!ctx.raw&&ctx.raw!==0)return null;return ctx.dataset.label+': $'+Math.round(ctx.raw).toLocaleString('en-AU');}}}
+      },
+      scales:{
+        x:{ticks:{color:'#8b949e',font:{size:9},maxTicksLimit:6,maxRotation:0},grid:{color:'rgba(48,54,61,.4)'}},
+        y:{ticks:{color:'#8b949e',font:{size:9},callback:v=>'$'+(v>=1000?(v/1000).toFixed(0)+'k':v)},grid:{color:'rgba(48,54,61,.3)'}}
+      }
+    }
+  });
 }
 
 function renderHistory(price){
@@ -1163,9 +1233,4 @@ function onConToggle(cb){
   if(livePrice&&liveRisk!==null&&fgSeries){
     const prices=allPrices.map(d=>d.y);const ma30=prices.slice(-30).reduce((a,b)=>a+b,0)/30;
     pendingBuy=calcDeployment(liveRisk,parseInt(fgSeries[0].value),livePrice,ma30,liveRegime,vol30d,halvingInfo,mvrvProxy);
-    updateBanner(liveRisk,parseInt(fgSeries[0].value),livePrice);renderBuyCard(pendingBuy,spotPrice||livePrice);renderZoneBars();
-  }
-}
-</script>
-</body>
-</html>
+    updateBanner(liveRisk,parseInt(fgSeries[0].value),livePrice);renderBuyCard(pendingBuy,spotPrice||
