@@ -196,6 +196,18 @@ tr:last-child td{border-bottom:none}
 .isec-body li{margin-bottom:4px}
 .isec-body p{margin-bottom:6px}
 
+/* PACING CARD */
+.pacing-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.pacing-bar-wrap{height:10px;background:var(--surface2);border-radius:6px;margin:10px 0 4px;position:relative;overflow:hidden}
+.pacing-bar-time{position:absolute;top:0;left:0;height:100%;background:rgba(88,166,255,.25);border-radius:6px;transition:width .4s}
+.pacing-bar-dep{position:absolute;top:0;left:0;height:100%;border-radius:6px;transition:width .4s}
+.pacing-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:12px}
+.pacing-row{display:flex;gap:8px}
+.pacing-stat{flex:1;background:var(--surface2);border-radius:10px;padding:10px 12px}
+.pacing-stat-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.pacing-stat-val{font-size:16px;font-weight:800;line-height:1}
+.pacing-warn{margin-top:12px;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5}
+
 /* TWEETS */
 .tweet-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
 .tweet-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -207,12 +219,48 @@ tr:last-child td{border-bottom:none}
 .tweet-date{font-size:11px;color:var(--muted)}
 .tweet-link{font-size:11px;color:var(--blue);text-decoration:none}
 
+/* SIGNAL DRIVERS */
+.drivers-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:14px;overflow:hidden}
+.drivers-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.drivers-hdr-left{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.drivers-hdr-right{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.drivers-body{padding:0 12px 12px;display:none}
+.drivers-body.open{display:block}
+.driver-row{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;border-bottom:1px solid rgba(48,54,61,.4)}
+.driver-row:last-child{border-bottom:none}
+.driver-name{font-size:12px;color:var(--muted);flex:1}
+.driver-val{font-size:12px;font-weight:700;text-align:right;margin-right:8px}
+.driver-arrow{font-size:14px;width:20px;text-align:center}
+
 /* QUANT METRICS GRID */
 .qm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .qm-cell{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
 .qm-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
 .qm-val{font-size:clamp(15px,4vw,20px);font-weight:800;line-height:1;color:var(--text)}
 .qm-sub{font-size:10px;color:var(--muted);margin-top:4px}
+
+/* SCENARIO PLANNER */
+.scenario-btns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.scen-btn{flex:1;min-width:72px;padding:10px 8px;border:1px solid var(--border);border-radius:10px;
+  background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;
+  text-align:center;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.scen-btn.active{border-color:var(--blue);background:rgba(88,166,255,.12);color:var(--blue)}
+.scen-btn:active{opacity:.7}
+.scen-results{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.scen-cell{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px}
+.scen-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.scen-val{font-size:20px;font-weight:800;line-height:1}
+.scen-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.scen-note{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.6;padding:10px 12px;background:var(--surface2);border-radius:10px}
+
+/* CYCLE TABLE */
+.cycle-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+.cycle-table th{text-align:left;padding:8px 10px;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.cycle-table td{padding:9px 10px;border-bottom:1px solid rgba(48,54,61,.35);vertical-align:top}
+.cycle-table tr:last-child td{border-bottom:none}
+.cycle-table .cyc-label{font-weight:700;font-size:13px}
+.cyc-current{background:rgba(88,166,255,.05)}
+.cyc-badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700}
 
 /* DESKTOP */
 @media(min-width:700px){
@@ -284,6 +332,41 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <!-- Buy confirmation (hidden until BUY signal) -->
+  <!-- SIGNAL DRIVERS -->
+  <div class="drivers-card" id="drivers-card">
+    <div class="drivers-hdr" onclick="toggleDrivers()">
+      <div class="drivers-hdr-left">Why this signal?</div>
+      <div class="drivers-hdr-right"><span id="drivers-summary">—</span><span id="drivers-chevron">▾</span></div>
+    </div>
+    <div class="drivers-body" id="drivers-body">
+      <div class="driver-row">
+        <span class="driver-name">Risk Score</span>
+        <span class="driver-val" id="dr-risk">—</span>
+        <span class="driver-arrow" id="dr-risk-arr">—</span>
+      </div>
+      <div class="driver-row">
+        <span class="driver-name">Fear &amp; Greed</span>
+        <span class="driver-val" id="dr-fg">—</span>
+        <span class="driver-arrow" id="dr-fg-arr">—</span>
+      </div>
+      <div class="driver-row">
+        <span class="driver-name">Drawdown from ATH</span>
+        <span class="driver-val" id="dr-dd">—</span>
+        <span class="driver-arrow" id="dr-dd-arr">—</span>
+      </div>
+      <div class="driver-row">
+        <span class="driver-name">30d Volatility</span>
+        <span class="driver-val" id="dr-vol">—</span>
+        <span class="driver-arrow" id="dr-vol-arr">—</span>
+      </div>
+      <div class="driver-row">
+        <span class="driver-name">Halving Cycle Phase</span>
+        <span class="driver-val" id="dr-halv">—</span>
+        <span class="driver-arrow" id="dr-halv-arr">—</span>
+      </div>
+    </div>
+  </div>
+
   <div class="card" id="buy-card" style="display:none;border-color:var(--green)">
     <div class="card-title">📊 Confirm Purchase</div>
     <div class="deploy-amt" id="deploy-amt">$0</div>
@@ -353,6 +436,39 @@ tr:last-child td{border-bottom:none}
       <div class="stat-val" id="last-updated" style="font-size:12px;color:var(--muted)">—</div>
       <div class="stat-sub" id="cycle-lbl">Cycle 1</div>
     </div>
+  </div>
+
+  <!-- BUDGET PACING -->
+  <div class="pacing-card" id="pacing-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">Budget Pacing</div>
+      <div id="pacing-status-pill" style="font-size:11px;font-weight:700;color:var(--muted)">—</div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:2px">Projected bottom: <strong id="pacing-bottom-date" style="color:var(--text)">Oct 2026</strong> · <span id="pacing-days-left" style="color:var(--text)">—</span> days left</div>
+    <div class="pacing-bar-wrap">
+      <div class="pacing-bar-time" id="pacing-bar-time"></div>
+      <div class="pacing-bar-dep" id="pacing-bar-dep"></div>
+    </div>
+    <div class="pacing-labels">
+      <span>Campaign start</span>
+      <span id="pacing-bar-legend">—% deployed · —% time elapsed</span>
+      <span>Oct '26</span>
+    </div>
+    <div class="pacing-row">
+      <div class="pacing-stat">
+        <div class="pacing-stat-label">Deployed</div>
+        <div class="pacing-stat-val" id="pacing-deployed">—</div>
+      </div>
+      <div class="pacing-stat">
+        <div class="pacing-stat-label">Remaining</div>
+        <div class="pacing-stat-val" id="pacing-remaining">—</div>
+      </div>
+      <div class="pacing-stat">
+        <div class="pacing-stat-label">Daily Rate</div>
+        <div class="pacing-stat-val" id="pacing-rate">—</div>
+      </div>
+    </div>
+    <div class="pacing-warn" id="pacing-warn" style="display:none"></div>
   </div>
 
   <!-- Cowen Tweets -->
@@ -468,10 +584,86 @@ tr:last-child td{border-bottom:none}
       </div>
     </div>
   </div>
+  <!-- CYCLE COMPARISON -->
+  <div class="card">
+    <div class="card-title">Bear Market Cycle Comparison</div>
+    <table class="cycle-table">
+      <thead>
+        <tr>
+          <th>Cycle</th>
+          <th>ATH</th>
+          <th>Drawdown</th>
+          <th>Days in</th>
+          <th>Days to bottom</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="cyc-label" style="color:var(--muted)">2017–18</div></td>
+          <td>$19.7k<br><span style="font-size:10px;color:var(--muted)">Dec 17, 2017</span></td>
+          <td style="color:var(--green)">−84%<br><span style="font-size:10px;color:var(--muted)">→ $3.1k</span></td>
+          <td style="color:var(--muted)">363 days</td>
+          <td style="color:var(--muted)">Dec 15, 2018<br><span style="font-size:10px">Bottomed</span></td>
+        </tr>
+        <tr>
+          <td><div class="cyc-label" style="color:var(--muted)">2021–22</div></td>
+          <td>$69k<br><span style="font-size:10px;color:var(--muted)">Nov 10, 2021</span></td>
+          <td style="color:var(--green)">−77%<br><span style="font-size:10px;color:var(--muted)">→ $15.5k</span></td>
+          <td style="color:var(--muted)">376 days</td>
+          <td style="color:var(--muted)">Nov 21, 2022<br><span style="font-size:10px">Bottomed</span></td>
+        </tr>
+        <tr class="cyc-current">
+          <td><div class="cyc-label" style="color:var(--blue)">2025–?</div><div style="margin-top:3px"><span class="cyc-badge" style="background:rgba(88,166,255,.15);color:var(--blue)">NOW</span></div></td>
+          <td id="cyc-ath-val">—<br><span style="font-size:10px;color:var(--muted)" id="cyc-ath-date">—</span></td>
+          <td id="cyc-dd-val" style="color:var(--yellow)">—<br><span style="font-size:10px;color:var(--muted)" id="cyc-dd-target">—</span></td>
+          <td id="cyc-days-in" style="color:var(--blue)">—</td>
+          <td id="cyc-proj-bottom" style="color:var(--yellow)">Oct 2026<br><span style="font-size:10px;color:var(--muted)">Cowen projection</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px;padding:10px 12px;background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6">
+      📊 Prior bears bottomed at <strong style="color:var(--text)">−77% to −84%</strong> from ATH over <strong style="color:var(--text)">363–376 days</strong>. At −84% from the current ATH (~$109k), the floor would be ~<strong id="cyc-floor-84" style="color:var(--green)">$17k</strong>. At −77%, ~<strong id="cyc-floor-77" style="color:var(--yellow)">$25k</strong>.
+    </div>
+  </div>
 </div>
 
 <!-- PORTFOLIO TAB -->
 <div id="tab-portfolio" class="tab-panel">
+  <div class="card">
+    <div class="card-title">Scenario Planner — If BTC Drops To…</div>
+    <div class="scenario-btns" id="scen-btns">
+      <button class="scen-btn" onclick="runScenario(80000,this)">$80k</button>
+      <button class="scen-btn" onclick="runScenario(70000,this)">$70k</button>
+      <button class="scen-btn" onclick="runScenario(60000,this)">$60k</button>
+      <button class="scen-btn active" onclick="runScenario(50000,this)">$50k</button>
+      <button class="scen-btn" onclick="runScenario(40000,this)">$40k</button>
+      <button class="scen-btn" onclick="runScenario(30000,this)">$30k</button>
+    </div>
+    <div class="scen-results">
+      <div class="scen-cell">
+        <div class="scen-label">Portfolio Value</div>
+        <div class="scen-val" id="scen-portval">—</div>
+        <div class="scen-sub" id="scen-portval-sub">BTC holdings + cash</div>
+      </div>
+      <div class="scen-cell">
+        <div class="scen-label">P&amp;L vs Deployed</div>
+        <div class="scen-val" id="scen-pnl">—</div>
+        <div class="scen-sub" id="scen-pnl-sub">on capital deployed</div>
+      </div>
+      <div class="scen-cell">
+        <div class="scen-label">Avg Cost Basis</div>
+        <div class="scen-val" id="scen-cb">—</div>
+        <div class="scen-sub" id="scen-cb-sub">if you buy remaining now</div>
+      </div>
+      <div class="scen-cell">
+        <div class="scen-label">Budget Remaining</div>
+        <div class="scen-val" id="scen-rem">—</div>
+        <div class="scen-sub" id="scen-rem-sub">still available to deploy</div>
+      </div>
+    </div>
+    <div class="scen-note" id="scen-note">Select a price above to model the scenario.</div>
+  </div>
+
   <div class="card">
     <div class="card-title">Budget Zone Allocation</div>
     <div id="zone-bars"></div>
@@ -643,10 +835,182 @@ function switchTab(tab){
       if(fgSeries) renderFG(fgSeries);
       const cp=spotPrice||livePrice;
       if(cp) renderPerfChart(cp);
-      renderQuantMetrics(cp);
+      renderQuantMetrics(cp);renderCycleComparison(cp);
     });
   }
   document.getElementById('content').scrollTop=0;
+}
+
+function toggleDrivers(){
+  const b=document.getElementById('drivers-body');
+  const c=document.getElementById('drivers-chevron');
+  const open=b.classList.toggle('open');
+  if(c) c.textContent=open?'▴':'▾';
+}
+
+function updateSignalDrivers(risk, fg, price, vol30, halving, ath){
+  const set=(id,val,color)=>{const el=document.getElementById(id);if(el){el.textContent=val;if(color)el.style.color=color;}};
+  const arr=(id,bull,bear)=>{const el=document.getElementById(id);if(!el)return;if(bull){el.textContent='▲';el.style.color='var(--green)';}else if(bear){el.textContent='▼';el.style.color='var(--red)';}else{el.textContent='→';el.style.color='var(--muted)';}};
+
+  // Risk
+  const rPct=(risk*100).toFixed(0)+'%';
+  const rColor=risk<0.35?'var(--green)':risk>0.65?'var(--red)':'var(--yellow)';
+  set('dr-risk', rPct, rColor);
+  arr('dr-risk-arr', risk<0.35, risk>0.65);
+
+  // F&G
+  const fgLbl2=fg<=25?'Extreme Fear':fg<=45?'Fear':fg<=55?'Neutral':fg<=75?'Greed':'Extreme Greed';
+  const fgColor2=fg<=45?'var(--green)':fg<=55?'var(--muted)':'var(--red)';
+  set('dr-fg', fg+' — '+fgLbl2, fgColor2);
+  arr('dr-fg-arr', fg<=45, fg>55);
+
+  // ATH Drawdown
+  const dd=ath>0?((price-ath)/ath*100):0;
+  const ddColor=dd<-50?'var(--green)':dd<-25?'var(--yellow)':'var(--muted)';
+  set('dr-dd', dd.toFixed(1)+'%', ddColor);
+  arr('dr-dd-arr', dd<-40, dd>-10);
+
+  // Vol
+  const volColor=vol30>80?'var(--yellow)':vol30>50?'var(--muted)':'var(--green)';
+  set('dr-vol', vol30.toFixed(0)+'% ann.', volColor);
+  arr('dr-vol-arr', vol30>60, false); // high vol = more opportunity, not bear
+
+  // Halving
+  const halvColor=halving&&halving.phase==='bear'?'var(--green)':'var(--muted)';
+  const halvTxt=halving?halving.label:'—';
+  set('dr-halv', halvTxt, halvColor);
+  arr('dr-halv-arr', halving&&halving.phase==='bear', false);
+
+  // Summary: count bulls vs bears
+  const bulls=[risk<0.35, fg<=45, dd<-40, vol30>60, halving&&halving.phase==='bear'].filter(Boolean).length;
+  const bears=[risk>0.65, fg>55].filter(Boolean).length;
+  const sumEl=document.getElementById('drivers-summary');
+  if(sumEl){
+    if(bears>1){sumEl.textContent=bears+' bearish signals';sumEl.style.color='var(--red)';}
+    else if(bulls>=3){sumEl.textContent=bulls+' bullish signals';sumEl.style.color='var(--green)';}
+    else{sumEl.textContent='Mixed signals';sumEl.style.color='var(--muted)';}
+  }
+}
+
+function runScenario(targetPrice, btn){
+  // highlight button
+  document.querySelectorAll('.scen-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+
+  const hist=TRACKER.history||[];
+  const totalSats=hist.reduce((s,h)=>s+(h.sats||0),0);
+  const totalSpent=hist.reduce((s,h)=>s+h.amount,0);
+  const remaining=TRACKER.remaining||0;
+  const btcHeld=totalSats/1e8;
+
+  // Current holdings value at target price
+  const holdingsVal=btcHeld*targetPrice;
+  const portVal=holdingsVal+remaining;
+  const pnl=holdingsVal-totalSpent;
+  const pnlPct=totalSpent>0?(pnl/totalSpent*100):0;
+
+  // If you deployed ALL remaining at target price
+  const addlBTC=remaining/targetPrice;
+  const totalBTC=btcHeld+addlBTC;
+  const blendedCB=totalBTC>0?(totalSpent+remaining)/totalBTC:0;
+
+  const s=id=>document.getElementById(id);
+  const fmt=n=>'$'+Math.round(Math.abs(n)).toLocaleString('en-AU');
+  const fmtK=n=>'$'+Math.round(n/1000)+'k';
+
+  if(s('scen-portval')){s('scen-portval').textContent=fmt(portVal);s('scen-portval').style.color=portVal>=(totalSpent+remaining*0.5)?'var(--green)':'var(--red)';}
+  if(s('scen-portval-sub')) s('scen-portval-sub').textContent=btcHeld.toFixed(4)+' BTC + $'+remaining.toLocaleString()+' cash';
+
+  if(s('scen-pnl')){
+    const sign=pnl>=0?'+':'';
+    s('scen-pnl').textContent=sign+fmt(pnl);
+    s('scen-pnl').style.color=pnl>=0?'var(--green)':'var(--red)';
+  }
+  if(s('scen-pnl-sub')) s('scen-pnl-sub').textContent=(pnlPct>=0?'+':'')+pnlPct.toFixed(1)+'% on $'+totalSpent.toLocaleString()+' deployed';
+
+  if(s('scen-cb')){s('scen-cb').textContent=fmtK(blendedCB);s('scen-cb').style.color=blendedCB<targetPrice?'var(--green)':'var(--yellow)';}
+  if(s('scen-cb-sub')) s('scen-cb-sub').textContent='if all $'+remaining.toLocaleString()+' deployed at '+fmtK(targetPrice);
+
+  if(s('scen-rem')){s('scen-rem').textContent='$'+remaining.toLocaleString();s('scen-rem').style.color='var(--blue)';}
+  if(s('scen-rem-sub')) s('scen-rem-sub').textContent=remaining>0?'Ready to deploy':'Fully deployed';
+
+  const note=s('scen-note');
+  if(note){
+    if(hist.length===0){note.textContent='Add your first buy to the tracker to see personalised scenarios.';return;}
+    const liveP=livePrice||targetPrice;
+    const fromLive=((targetPrice-liveP)/liveP*100);
+    const dir=fromLive>=0?'up':'down';
+    const nearBottom=targetPrice<=50000;
+    note.innerHTML=`At ${fmtK(targetPrice)} (${(fromLive>=0?'+':'')+fromLive.toFixed(0)}% from current), `+
+      `your <strong>${btcHeld.toFixed(4)} BTC</strong> would be worth <strong>${fmt(holdingsVal)}</strong>. `+
+      (nearBottom?`That's deep value territory. Blended cost basis of <strong>${fmtK(blendedCB)}</strong> if you deploy the rest here.`:
+      `Your cost basis would be <strong>${fmtK(blendedCB)}</strong> if you deployed all remaining cash at this level.`);
+  }
+}
+
+function updatePacing(){
+  const deployed=TRACKER.deployed||0;
+  const total=TRACKER.total_budget||10000;
+  const remaining=TRACKER.remaining||(total-deployed);
+  const startStr=TRACKER.start_date||new Date().toISOString().slice(0,10);
+  const start=new Date(startStr);
+  const bottom=new Date('2026-10-15');
+  const now=new Date();
+
+  const totalDays=Math.max(1,(bottom-start)/864e5);
+  const elapsed=Math.max(1,(now-start)/864e5);
+  const daysLeft=Math.max(0,Math.round((bottom-now)/864e5));
+
+  const depPct=total>0?(deployed/total*100):0;
+  const timePct=Math.min(100,elapsed/totalDays*100);
+  const pace=timePct>0?(depPct/timePct):0;
+
+  const dailyRate=elapsed>0?deployed/elapsed:0;
+  const projRunoutDays=dailyRate>0?remaining/dailyRate:Infinity;
+  const projRunout=new Date(now.getTime()+projRunoutDays*864e5);
+  const runoutBefore=projRunout<bottom&&dailyRate>0;
+
+  // update bar
+  const timeBar=document.getElementById('pacing-bar-time');
+  const depBar=document.getElementById('pacing-bar-dep');
+  if(timeBar) timeBar.style.width=timePct.toFixed(1)+'%';
+  if(depBar){
+    depBar.style.width=Math.min(100,depPct).toFixed(1)+'%';
+    depBar.style.background=pace>1.5?'var(--red)':pace>1.1?'var(--yellow)':'var(--green)';
+  }
+
+  const legend=document.getElementById('pacing-bar-legend');
+  if(legend) legend.textContent=depPct.toFixed(0)+'% deployed · '+timePct.toFixed(0)+'% time elapsed';
+
+  const pill=document.getElementById('pacing-status-pill');
+  if(pill){
+    if(pace>1.5){pill.textContent='🔴 Ahead of pace';pill.style.color='var(--red)';}
+    else if(pace>1.1){pill.textContent='🟡 Slightly fast';pill.style.color='var(--yellow)';}
+    else if(pace<0.7){pill.textContent='🟡 Behind pace';pill.style.color='var(--yellow)';}
+    else{pill.textContent='🟢 On track';pill.style.color='var(--green)';}
+  }
+
+  const s=id=>document.getElementById(id);
+  if(s('pacing-days-left')) s('pacing-days-left').textContent=daysLeft;
+  if(s('pacing-deployed')) s('pacing-deployed').textContent='$'+deployed.toLocaleString();
+  if(s('pacing-remaining')) s('pacing-remaining').textContent='$'+remaining.toLocaleString();
+  if(s('pacing-rate')) s('pacing-rate').textContent=dailyRate>0?'$'+dailyRate.toFixed(0)+'/day':'—';
+
+  const warn=document.getElementById('pacing-warn');
+  if(warn){
+    if(runoutBefore&&daysLeft>0){
+      const mo=projRunout.toLocaleDateString('en-AU',{month:'short',year:'numeric'});
+      warn.style.display='block';
+      warn.style.background='rgba(248,81,73,.08)';warn.style.border='1px solid rgba(248,81,73,.3)';warn.style.color='var(--red)';
+      warn.innerHTML='⚠️ At this rate your budget runs out <strong>'+mo+'</strong> — '+Math.round(projRunoutDays)+' days before the projected bottom. Consider slowing buys.';
+    } else if(pace<0.5&&daysLeft<120){
+      warn.style.display='block';
+      warn.style.background='rgba(227,179,65,.08)';warn.style.border='1px solid rgba(227,179,65,.3)';warn.style.color='var(--yellow)';
+      warn.innerHTML='💡 You're behind pace with '+daysLeft+' days left to the projected bottom. Remaining: $'+remaining.toLocaleString()+'.';
+    } else {
+      warn.style.display='none';
+    }
+  }
 }
 
 function toggleIsec(hdr){
@@ -851,7 +1215,7 @@ function processAll(){
   renderZoneBars();
   renderHistory(displayPrice);
   updateReserve();
-  if(activeTab==='charts'){renderRiskChart(valid);if(fgSeries)renderFG(fgSeries);renderPerfChart(displayPrice);renderQuantMetrics(displayPrice);}
+  if(activeTab==='charts'){renderRiskChart(valid);if(fgSeries)renderFG(fgSeries);renderPerfChart(displayPrice);renderQuantMetrics(displayPrice);renderCycleComparison(displayPrice);}
   else{chartsNeedRender=true;}
   const now=new Date();
   document.getElementById('last-updated').textContent=now.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
@@ -1115,6 +1479,29 @@ function renderHistory(price){
 }
 
 function updateReserve(){const r=TRACKER.cycle2_reserve||0;if(r>0||TRACKER.high_risk_streak>=8){document.getElementById('reserve-banner').style.display='block';document.getElementById('reserve-amt').textContent='$'+r.toLocaleString();}}
+
+function renderCycleComparison(currentPrice){
+  if(!allPrices||!currentPrice) return;
+  const prices=allPrices.map(d=>d.y).filter(p=>p>0);
+  // Find ATH in last 4 years
+  const recent=allPrices.slice(-1460);
+  let athVal=0,athIdx=0;
+  recent.forEach((d,i)=>{if(d.y>athVal){athVal=d.y;athIdx=i;}});
+  const athDate=new Date(recent[athIdx].x*1000);
+  const daysIn=Math.round((Date.now()-athDate)/864e5);
+  const dd=(currentPrice-athVal)/athVal*100;
+
+  const s=id=>document.getElementById(id);
+  if(s('cyc-ath-val')) s('cyc-ath-val').innerHTML='$'+Math.round(athVal/1000)+'k';
+  if(s('cyc-ath-date')) s('cyc-ath-date').textContent=athDate.toLocaleDateString('en-AU',{month:'short',day:'numeric',year:'numeric'});
+  if(s('cyc-dd-val')){
+    s('cyc-dd-val').innerHTML=dd.toFixed(0)+'%<br><span style="font-size:10px;color:var(--muted)">→ $'+Math.round(currentPrice/1000)+'k now</span>';
+    s('cyc-dd-val').style.color=dd<-50?'var(--green)':dd<-30?'var(--yellow)':'var(--red)';
+  }
+  if(s('cyc-days-in')) s('cyc-days-in').textContent=daysIn+' days';
+  if(s('cyc-floor-84')) s('cyc-floor-84').textContent='$'+Math.round(athVal*0.16/1000)+'k';
+  if(s('cyc-floor-77')) s('cyc-floor-77').textContent='$'+Math.round(athVal*0.23/1000)+'k';
+}
 
 function renderQuantMetrics(currentPrice){
   if(!allPrices||allPrices.length<50||!currentPrice) return;
