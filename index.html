@@ -17,44 +17,53 @@
   --bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;
   --text:#e6edf3;--muted:#8b949e;--green:#3fb950;--red:#f85149;
   --yellow:#e3b341;--blue:#58a6ff;--purple:#bc8cff;--orange:#f78166;
-  --nav-h:64px;--top-h:56px;
+  --nav-h:68px;--top-h:56px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overscroll-behavior:none}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  overscroll-behavior:none;-webkit-text-size-adjust:100%}
 
 /* TOP BAR */
-#top-bar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--top-h);
-  background:rgba(13,17,23,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;padding:0 16px;
-  padding-top:env(safe-area-inset-top,0px)}
-#top-logo{font-size:15px;font-weight:800;letter-spacing:-.3px;color:var(--text)}
+#top-bar{position:fixed;top:0;left:0;right:0;z-index:100;
+  height:calc(var(--top-h) + env(safe-area-inset-top,0px));
+  background:rgba(13,17,23,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 16px 10px;padding-top:calc(10px + env(safe-area-inset-top,0px))}
+#top-logo{font-size:16px;font-weight:800;letter-spacing:-.3px;color:var(--text)}
 #top-logo span{color:var(--orange)}
-#top-price{text-align:center;line-height:1.2}
-.tp-val{font-size:17px;font-weight:700}
-.tp-sub{font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:4px}
-.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.icon-btn{border:none;background:none;color:var(--muted);cursor:pointer;padding:6px 8px;font-size:16px;border-radius:8px;transition:color .15s}
-.icon-btn:hover,.icon-btn:active{color:var(--text)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  display:inline-block;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.icon-btn{border:none;background:none;color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  width:44px;height:44px;font-size:20px;border-radius:10px;
+  transition:background .15s,color .15s;-webkit-tap-highlight-color:transparent}
+.icon-btn:active{background:rgba(255,255,255,.08);color:var(--text)}
 
 /* BOTTOM NAV */
 #bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;
-  background:rgba(22,27,34,.97);backdrop-filter:blur(10px);border-top:1px solid var(--border);
-  display:flex;height:var(--nav-h);padding-bottom:env(safe-area-inset-bottom,0px)}
+  background:rgba(13,17,23,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-top:1px solid var(--border);display:flex;
+  height:calc(var(--nav-h) + env(safe-area-inset-bottom,0px));
+  padding-bottom:env(safe-area-inset-bottom,0px)}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:3px;border:none;background:none;cursor:pointer;color:var(--muted);
-  font-size:10px;font-weight:600;letter-spacing:.02em;transition:color .15s;padding-bottom:2px}
-.nav-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
+  gap:4px;border:none;background:none;cursor:pointer;color:var(--muted);
+  font-size:10px;font-weight:600;letter-spacing:.03em;transition:color .15s;
+  -webkit-tap-highlight-color:transparent;padding-bottom:0}
+.nav-btn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .nav-btn.active{color:var(--blue)}
+.nav-btn:active{opacity:.6}
 
 /* CONTENT */
 #content{
-  margin-top:var(--top-h);
+  margin-top:calc(var(--top-h) + env(safe-area-inset-top,0px));
   margin-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px));
   overflow-y:auto;
-  height:calc(100dvh - var(--top-h) - var(--nav-h) - env(safe-area-inset-bottom,0px));
+  height:calc(100dvh - calc(var(--top-h) + env(safe-area-inset-top,0px)) - calc(var(--nav-h) + env(safe-area-inset-bottom,0px)));
 }
-.tab-panel{display:none;padding:14px 14px 8px;animation:fadein .18s ease}
+.tab-panel{display:none;padding:12px 16px 20px;animation:fadein .2s ease}
 .tab-panel.active{display:block}
 @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
@@ -75,37 +84,38 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .pill{display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600}
 
 /* PRICE HERO */
-#price-hero{padding:22px 0 18px;text-align:center}
-#hero-price{font-size:52px;font-weight:800;letter-spacing:-2px;line-height:1}
-#hero-sub{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;flex-wrap:wrap}
-.hero-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+#price-hero{padding:20px 0 14px;text-align:center}
+#hero-price{font-size:clamp(38px,11vw,56px);font-weight:800;letter-spacing:-1.5px;line-height:1}
+#hero-sub{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap;padding:0 4px}
+.hero-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
 .hero-risk{background:rgba(63,185,80,.15);color:var(--green)}
 .hero-regime{background:rgba(88,166,255,.12);color:var(--blue)}
 
 /* ACTION CARD */
-#action-card{border-radius:16px;padding:20px;margin-bottom:16px;min-height:130px}
+#action-card{border-radius:18px;padding:22px 20px;margin-bottom:14px}
 #action-card.hold{background:var(--surface);border:1px solid var(--border)}
-#action-card.buy{background:linear-gradient(135deg,rgba(63,185,80,.16),rgba(63,185,80,.06));border:2px solid var(--green)}
-#action-card.sbuy{background:linear-gradient(135deg,rgba(63,185,80,.26),rgba(63,185,80,.10));border:2px solid var(--green)}
-#action-card.sell{background:linear-gradient(135deg,rgba(248,81,73,.16),rgba(248,81,73,.06));border:2px solid var(--red)}
+#action-card.buy{background:linear-gradient(145deg,rgba(63,185,80,.18),rgba(63,185,80,.06));border:2px solid var(--green)}
+#action-card.sbuy{background:linear-gradient(145deg,rgba(63,185,80,.28),rgba(63,185,80,.10));border:2px solid var(--green)}
+#action-card.sell{background:linear-gradient(145deg,rgba(248,81,73,.18),rgba(248,81,73,.06));border:2px solid var(--red)}
 #action-card.done{background:rgba(88,166,255,.08);border:1px solid var(--blue)}
-#action-label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
-#action-num{font-size:46px;font-weight:800;line-height:1;letter-spacing:-1px}
+#action-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+#action-num{font-size:clamp(34px,10vw,50px);font-weight:800;line-height:1;letter-spacing:-1px}
 #action-card.buy #action-num,#action-card.sbuy #action-num{color:var(--green)}
-#action-card.hold #action-num{color:var(--muted)}
+#action-card.hold #action-num{color:var(--text)}
 #action-card.sell #action-num{color:var(--red)}
-#action-detail{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5}
-#predicted-block{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)}
-#predicted-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-#predicted-num{font-size:28px;font-weight:800;color:var(--yellow);margin-top:2px}
-#predicted-sub{font-size:11px;color:var(--muted);margin-top:2px}
+#action-card.done #action-num{color:var(--blue)}
+#action-detail{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.55}
+#predicted-block{margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08)}
+#predicted-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+#predicted-num{font-size:clamp(24px,7vw,32px);font-weight:800;color:var(--yellow)}
+#predicted-sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
 
 /* PORTFOLIO STATS */
 .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
-.stat-cell{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
-.stat-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
-.stat-val{font-size:18px;font-weight:700;line-height:1}
-.stat-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.stat-cell{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 12px;min-height:72px}
+.stat-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.stat-val{font-size:clamp(14px,4.5vw,20px);font-weight:700;line-height:1}
+.stat-sub{font-size:10px;color:var(--muted);margin-top:4px}
 .pos{color:var(--green)}.neg{color:var(--red)}
 
 /* KEEP old mc for legacy refs */
@@ -115,35 +125,39 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .mc-sub{font-size:10px;color:var(--muted);margin-top:2px}
 
 /* CARDS */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
-.card-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
-.card-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px}
+.card-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
+.card-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 
 /* BUY/SELL */
-.deploy-amt{font-size:38px;font-weight:800;color:var(--green);line-height:1}
-.deploy-sub{font-size:12px;color:var(--muted);margin-top:3px}
-.factors-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}
-.factor{background:var(--bg);border-radius:8px;padding:8px 10px}
-.factor-name{font-size:9px;color:var(--muted);margin-bottom:2px;text-transform:uppercase}
-.factor-val{font-size:12px;font-weight:600}
-.zone-ind{background:var(--bg);border-radius:8px;padding:9px 12px;margin:8px 0;font-size:12px;color:var(--muted);line-height:1.5}
+.deploy-amt{font-size:clamp(32px,9vw,42px);font-weight:800;color:var(--green);line-height:1}
+.deploy-sub{font-size:13px;color:var(--muted);margin-top:5px}
+.factors-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0}
+.factor{background:var(--bg);border-radius:10px;padding:10px 11px}
+.factor-name{font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.factor-val{font-size:13px;font-weight:600}
+.zone-ind{background:var(--bg);border-radius:10px;padding:11px 14px;margin:10px 0;font-size:12px;color:var(--muted);line-height:1.6}
 .zone-ind strong{color:var(--text)}
-.sell-amt{font-size:32px;font-weight:800;color:var(--red);line-height:1}
-.sell-sub{font-size:13px;color:var(--muted);margin-top:3px}
-.cgt-note{border-radius:8px;padding:10px 12px;margin-top:10px;font-size:12px;line-height:1.5}
+.sell-amt{font-size:clamp(28px,8vw,36px);font-weight:800;color:var(--red);line-height:1}
+.sell-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.cgt-note{border-radius:10px;padding:12px 14px;margin-top:12px;font-size:12px;line-height:1.6}
 .cgt-ok{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);color:var(--green)}
 .cgt-warn{background:rgba(227,179,65,.1);border:1px solid rgba(227,179,65,.3);color:var(--yellow)}
-.confirm-row{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap}
-.confirm-row label{font-size:12px;cursor:pointer;user-select:none}
-.btn{border:none;border-radius:8px;padding:10px 18px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.confirm-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap}
+.confirm-row label{font-size:13px;cursor:pointer;user-select:none;line-height:1.4}
+.confirm-row input[type=checkbox]{width:20px;height:20px;cursor:pointer;flex-shrink:0;accent-color:var(--green)}
+.btn{border:none;border-radius:10px;padding:13px 20px;font-size:14px;font-weight:700;
+  cursor:pointer;transition:opacity .15s,transform .1s;min-height:48px;
+  -webkit-tap-highlight-color:transparent}
+.btn:active{transform:scale(.97);opacity:.9}
 .btn:disabled{opacity:.3;cursor:not-allowed}
 .btn-green{background:var(--green);color:#000}
 .btn-red{background:var(--red);color:#fff}
 .btn-muted{background:var(--border);color:var(--text)}
-.btn-block{width:100%;padding:13px;font-size:13px;border-radius:10px;margin-top:6px;text-align:center}
-.save-ok{font-size:11px;color:var(--green);display:none}
-.manual-fields{display:none;margin-top:10px;font-size:12px;color:var(--muted);line-height:2.2}
-.manual-fields input{margin:0 6px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);width:110px}
+.btn-block{width:100%;padding:15px;font-size:14px;border-radius:12px;margin-top:8px;text-align:center;display:block}
+.save-ok{font-size:12px;color:var(--green);display:none}
+.manual-fields{display:none;margin-top:12px;font-size:13px;color:var(--muted);line-height:2.4}
+.manual-fields input{margin:0 6px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);width:120px;font-size:14px}
 
 /* CHARTS */
 .chart-wrap{position:relative;height:220px}
@@ -214,13 +228,10 @@ tr:last-child td{border-bottom:none}
 <div id="top-bar">
   <div id="top-logo">₿ BTC <span>DCA</span></div>
   <span id="btc-price" style="display:none"></span>
-  <div id="top-price">
-    <div class="tp-val" id="btc-price">—</div>
-    <div class="tp-sub"><span class="live-dot" id="live-dot" style="opacity:0"></span><span id="price-source">Loading…</span></div>
-  </div>
-  <div style="display:flex;gap:4px">
-    <button class="icon-btn" id="sync-btn" onclick="openSyncModal()" title="Sync">☁</button>
-    <button class="icon-btn" onclick="reloadData()" title="Refresh">↻</button>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span id="sync-status" style="font-size:11px;color:var(--muted)"></span>
+    <button class="icon-btn" id="sync-btn" onclick="openSyncModal()" title="Sync" style="font-size:18px;min-width:44px;min-height:44px">☁</button>
+    <button class="icon-btn" onclick="reloadData()" title="Refresh" style="font-size:18px;min-width:44px;min-height:44px">↻</button>
   </div>
 </div>
 
@@ -242,7 +253,7 @@ tr:last-child td{border-bottom:none}
   <div id="price-hero">
     <div id="hero-price">—</div>
     <div id="hero-sub">
-      <span class="hero-badge" style="background:rgba(139,148,158,.12);color:var(--muted);gap:5px"><span class="live-dot" id="live-dot" style="opacity:0"></span><span id="price-source">Loading</span></span>
+      <span class="hero-badge" id="live-badge" style="background:rgba(139,148,158,.12);color:var(--muted);gap:5px"><span class="live-dot" id="live-dot" style="opacity:0.4"></span><span id="price-source">Loading</span></span>
       <span class="hero-badge hero-risk" id="risk-pill">Risk —</span>
       <span class="hero-badge hero-regime" id="regime-pill">—</span>
       <span class="hero-badge" id="mvrv-pill" style="background:rgba(63,185,80,.12);color:var(--green)">MVRV —</span>
@@ -335,16 +346,16 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <!-- Cowen Tweets -->
-  <div class="card-title" style="padding:4px 2px 8px">📡 @intocryptoverse — Latest Analysis</div>
+  <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:4px 2px 10px">📡 @intocryptoverse — Latest Analysis</div>
   <div class="tweet-card">
     <div class="tweet-hdr">
       <div class="tweet-av">BC</div>
       <div><div class="tweet-name">Benjamin Cowen</div><div class="tweet-handle">@intocryptoverse</div></div>
     </div>
-    <div class="tweet-body">"If you want to understand my thesis on Bitcoin you can read this report published in January when Bitcoin was trading at $97k. My views are not just constrained to 'seasonality.' Bitcoin topped on apathy, and macro headwinds remain. I use seasonality to identify windows of opportunity."</div>
+    <div class="tweet-body">"In fact, I would argue that the more likely scenario is that 2026 is a red year for BTC while the ISM goes up, exactly like how it played out more than a decade ago. The bull case for BTC is that if the economy is still doing well after the four year cycle low is put in, then BTC can once again outperform."</div>
     <div class="tweet-footer">
-      <span class="tweet-date">2026</span>
-      <a href="https://x.com/intocryptoverse/status/2029618783619256510" target="_blank" rel="noopener" class="tweet-link">View on X ↗</a>
+      <span class="tweet-date">Jun 2026</span>
+      <a href="https://x.com/benjamincowen/status/2062641390778273939" target="_blank" rel="noopener" class="tweet-link">View on X ↗</a>
     </div>
   </div>
   <div class="tweet-card">
@@ -352,10 +363,21 @@ tr:last-child td{border-bottom:none}
       <div class="tweet-av">BC</div>
       <div><div class="tweet-name">Benjamin Cowen</div><div class="tweet-handle">@intocryptoverse</div></div>
     </div>
-    <div class="tweet-body">"While I think Bitcoin will go to the 200W SMA ($60k–$70k) in 2026, there is a high probability it will have a bounce back to the 200D SMA before going that low. All prior cycle bear markets were confirmed by a macro lower high at the 200D SMA."</div>
+    <div class="tweet-body">"The four year cycle for Bitcoin is not dead. Bitcoin topped when it always topped (to within 1 week when measured from low-to-high), so why can't it bottom near the end of the midterm year, just as it generally has?"</div>
     <div class="tweet-footer">
-      <span class="tweet-date">Nov 17, 2025</span>
-      <a href="https://x.com/intocryptoverse/status/1990515705515815337" target="_blank" rel="noopener" class="tweet-link">View on X ↗</a>
+      <span class="tweet-date">May 2026</span>
+      <a href="https://x.com/benjamincowen/status/2059010682683535371" target="_blank" rel="noopener" class="tweet-link">View on X ↗</a>
+    </div>
+  </div>
+  <div class="tweet-card">
+    <div class="tweet-hdr">
+      <div class="tweet-av">BC</div>
+      <div><div class="tweet-name">Benjamin Cowen</div><div class="tweet-handle">@intocryptoverse</div></div>
+    </div>
+    <div class="tweet-body">"Bitcoin bear markets usually last 1 year. Potential low in October 2026. Last cycle it took MSTR around 98 weeks to bottom. 98 weeks from MSTR top (November 2024) is also October 2026."</div>
+    <div class="tweet-footer">
+      <span class="tweet-date">May 2026</span>
+      <a href="https://x.com/intocryptoverse/status/1991635851579736287" target="_blank" rel="noopener" class="tweet-link">View on X ↗</a>
     </div>
   </div>
 </div>
