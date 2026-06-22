@@ -161,14 +161,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);
 
 /* CHARTS */
 .chart-wrap{position:relative;height:220px}
-.fg-big{font-size:clamp(44px,12vw,60px);font-weight:800;line-height:1}
-.fg-lbl{font-size:13px;font-weight:600;color:var(--muted);margin-top:4px}
-.fg-gauge-wrap{padding:14px 0 4px}
-.fg-track{height:10px;border-radius:6px;margin:0 0 6px;background:linear-gradient(to right,#3fb950,#e3b341,#f85149);position:relative}
-.fg-dot{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--bg);position:absolute;top:-3px;transition:left .4s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.fg-row{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.fg-num-block{text-align:center;min-width:64px}
+.fg-big{font-size:48px;font-weight:800;line-height:1}
+.fg-lbl{font-size:11px;font-weight:600;color:var(--muted);margin-top:3px}
+.fg-right{flex:1;min-width:0}
+.fg-track{height:8px;border-radius:5px;margin:0 0 4px;background:linear-gradient(to right,#3fb950,#e3b341,#f85149);position:relative}
+.fg-dot{width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--bg);position:absolute;top:-3px;transition:left .4s cubic-bezier(.4,0,.2,1);box-shadow:0 1px 4px rgba(0,0,0,.5)}
 .fg-track-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
-.fg-zones{display:flex;gap:4px;margin:10px 0 4px;flex-wrap:wrap}
-.fg-zone-pill{flex:1;text-align:center;padding:5px 4px;border-radius:8px;font-size:10px;font-weight:700;min-width:52px}
 
 /* PORTFOLIO */
 table{width:100%;border-collapse:collapse;font-size:11px}
@@ -401,26 +401,19 @@ tr:last-child td{border-bottom:none}
   <div class="card">
     <div class="card-title-row">
       <div class="card-title" style="margin-bottom:0">Fear &amp; Greed Index</div>
-      <div id="fg-source" style="font-size:10px;color:var(--muted)">alternative.me</div>
+      <div id="fg-mult" style="font-size:12px;font-weight:700;color:var(--muted)">—</div>
     </div>
-    <div style="text-align:center;padding:8px 0 2px">
-      <div class="fg-big" id="fg-val">—</div>
-      <div class="fg-lbl" id="fg-lbl">Loading…</div>
-    </div>
-    <div class="fg-gauge-wrap">
-      <div class="fg-track"><div class="fg-dot" id="fg-dot" style="left:48%"></div></div>
-      <div class="fg-track-labels">
-        <span>Extreme Fear</span><span>Fear</span><span>Neutral</span><span>Greed</span><span>Extreme Greed</span>
+    <div class="fg-row">
+      <div class="fg-num-block">
+        <div class="fg-big" id="fg-val">—</div>
+        <div class="fg-lbl" id="fg-lbl">Loading…</div>
+      </div>
+      <div class="fg-right">
+        <div class="fg-track"><div class="fg-dot" id="fg-dot" style="left:48%"></div></div>
+        <div class="fg-track-labels"><span>Fear</span><span>Neutral</span><span>Greed</span></div>
+        <div style="height:80px;margin-top:8px"><canvas id="fg-chart"></canvas></div>
       </div>
     </div>
-    <div class="fg-zones">
-      <div class="fg-zone-pill" style="background:rgba(63,185,80,.15);color:var(--green)">0–25 <br><span style="font-weight:400;font-size:9px">Ext. Fear<br>×1.15</span></div>
-      <div class="fg-zone-pill" style="background:rgba(63,185,80,.08);color:var(--green)">26–45 <br><span style="font-weight:400;font-size:9px">Fear<br>×1.08</span></div>
-      <div class="fg-zone-pill" style="background:rgba(139,148,158,.08);color:var(--muted)">46–55 <br><span style="font-weight:400;font-size:9px">Neutral<br>×1.00</span></div>
-      <div class="fg-zone-pill" style="background:rgba(248,81,73,.08);color:var(--red)">56–75 <br><span style="font-weight:400;font-size:9px">Greed<br>×0.92</span></div>
-      <div class="fg-zone-pill" style="background:rgba(248,81,73,.15);color:var(--red)">76–100 <br><span style="font-weight:400;font-size:9px">Ext. Greed<br>×0.85</span></div>
-    </div>
-    <div style="height:120px;margin-top:8px"><canvas id="fg-chart"></canvas></div>
   </div>
   <div class="card">
     <div class="card-title">Campaign Performance — Strategy vs Uniform DCA</div>
@@ -1022,6 +1015,8 @@ function renderFG(data){
   document.getElementById('fg-val').textContent=cur;document.getElementById('fg-val').style.color=fgColor(cur);
   document.getElementById('fg-lbl').textContent=fgLabel(cur);
   document.getElementById('fg-dot').style.left=Math.max(2,Math.min(90,cur*0.9))+'%';
+  const fgMultEl=document.getElementById('fg-mult');
+  if(fgMultEl){const m=cur<=25?'×1.15 mult':cur<=45?'×1.08 mult':cur<=55?'×1.00 mult':cur<=75?'×0.92 mult':'×0.85 mult';fgMultEl.textContent=m;fgMultEl.style.color=cur<=45?'var(--green)':cur<=55?'var(--muted)':'var(--red)';}
   const rev=[...data].reverse();
   if(fgCh)fgCh.destroy();
   fgCh=new Chart(document.getElementById('fg-chart'),{type:'bar',data:{labels:rev.map(d=>new Date(parseInt(d.timestamp)*1000).toLocaleDateString('en-AU',{weekday:'short'})),datasets:[{data:rev.map(d=>parseInt(d.value)),backgroundColor:rev.map(d=>fgColor(parseInt(d.value))),borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8b949e',font:{size:9}},grid:{display:false}},y:{min:0,max:100,ticks:{color:'#8b949e',font:{size:9},stepSize:25},grid:{color:'rgba(48,54,61,.4)'}}}}});
